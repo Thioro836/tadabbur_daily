@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tadabbur_daily/models/verse.dart';
 import 'package:tadabbur_daily/services/quran_service.dart';
+import 'package:tadabbur_daily/screens/journal_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -68,7 +69,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => JournalScreen(verse: verse),
+                            ),
+                          );
+                        },
                         child: Text('Méditer'),
                       ),
                     ],
