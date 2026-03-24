@@ -3,6 +3,8 @@ import 'package:tadabbur_daily/models/verse.dart';
 import 'package:tadabbur_daily/services/quran_service.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -67,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: () {},
-                        child: Text('Verset suivant'),
+                        child: Text('Méditer'),
                       ),
                     ],
                   );
