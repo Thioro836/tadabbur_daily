@@ -21,6 +21,7 @@ class StorageService {
   
     final box = await _getBox();
     await box.put(date, {
+      'date': date,
       'reflection': reflection,
       'identification': identification,
       'invocation': invocation,

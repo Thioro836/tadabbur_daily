@@ -72,22 +72,26 @@ class _JournalScreenState extends State<JournalScreen> {
                 ),
               ),
               SizedBox(height: 20),
-              ElevatedButton(onPressed: () async {
-                final today= DateTime.now().toString().split(' ')[0]; // "2026-03-24"
-               await _storageService.saveEntry(
-                  date: today,
-                  reflection: _reflectionController.text,
-                  identification: _identificationController.text,
-                  invocation: _invocationController.text,
-                  globalVerseNumber: widget.verse.globalVerseNumber,
-                );
-                //afficher un message de confirmation après la sauvegarde
+              ElevatedButton(
+                onPressed: () async {
+                  final today = DateTime.now().toString().split(
+                    ' ',
+                  )[0]; // "2026-03-24"
+                  await _storageService.saveEntry(
+                    date: today,
+                    reflection: _reflectionController.text,
+                    identification: _identificationController.text,
+                    invocation: _invocationController.text,
+                    globalVerseNumber: widget.verse.globalVerseNumber,
+                  );
+                  //afficher un message de confirmation après la sauvegarde
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Méditation sauvegardée ✅')),
                   );
                   Navigator.pop(context);
-              }, child: Text('Sauvegarder')),
-              
+                },
+                child: Text('Sauvegarder'),
+              ),
             ],
           ),
         ),
