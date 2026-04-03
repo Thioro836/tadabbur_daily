@@ -52,4 +52,15 @@ class StorageService {
 
     return streak;
   }
+  // Sauvegarder la langue choisie
+  Future<void> saveLanguage(String language) async {
+    final box = await _getBox();
+    await box.put('selected_language', language);
+  }
+
+  // Récupérer la langue choisie
+  Future<String> getLanguage() async {
+    final box = await _getBox();
+    return box.get('selected_language', defaultValue: 'fr');
+  }
 }
