@@ -17,7 +17,45 @@ class TadabburApp extends StatelessWidget {
     return MaterialApp(
       title: 'Tadabbur Daily',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+        colorScheme: ColorScheme(
+          brightness: Brightness.light,
+          primary: Colors.teal, // vert principal
+          onPrimary: Colors.white,
+          secondary: Color(0xFF00695C), // vert foncé accent
+          onSecondary: Colors.white,
+          background: Color(0xFFE0F2F1), // vert très clair
+          onBackground: Color(0xFF222222),
+          surface: Colors.white,
+          onSurface: Colors.teal,
+          error: Colors.red,
+          onError: Colors.white,
+        ),
+        scaffoldBackgroundColor: Color(0xFFE0F2F1), // vert très clair
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.teal,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: Colors.white,
+          selectedItemColor: Color(0xFF00695C), // vert foncé accent
+          unselectedItemColor: Colors.teal,
+          selectedIconTheme: IconThemeData(color: Color(0xFF00695C), size: 28),
+          unselectedIconTheme: IconThemeData(color: Colors.teal, size: 24),
+          showUnselectedLabels: true,
+        ),
+        cardTheme: CardThemeData(
+          color: Colors.white,
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        ),
+        textTheme: ThemeData.light().textTheme.apply(
+          bodyColor: Color(0xFF222222),
+          displayColor: Color(0xFF00695C),
+        ),
       ),
       home: MainScreen(),
     );

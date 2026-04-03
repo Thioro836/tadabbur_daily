@@ -49,7 +49,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   }
                   return Column(
                     children: [
-                    
+                    Text(
+                        '🔥 Streak : ${_storageService.calculateStreak(historique)} jours',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal[800],
+                        ),
+                      ),
+                      SizedBox(height: 10),
                       Text(
                         '📖 Total méditations : ${historique.length}',
                         style: TextStyle(

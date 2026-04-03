@@ -42,32 +42,63 @@ class _HomeScreenState extends State<HomeScreen> {
                   final verse = snapshot.data!;
                   return Column(
                     children: [
-                      Text(
-                        '${verse.surahNameEnglish} (${verse.surahNumber}:${verse.verseNumber})',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(color: Colors.teal, width: 2),
+                        ),
+                        margin: EdgeInsets.symmetric(
+                          vertical: 24,
+                          horizontal: 0,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 28,
+                            horizontal: 18,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                '${verse.surahNameEnglish} (${verse.surahNumber}:${verse.verseNumber})',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.teal[800],
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
+                              SizedBox(height: 18),
+                              Text(
+                                verse.arabicText,
+                                textAlign: TextAlign.center,
+                                textDirection: TextDirection.rtl,
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.teal[900],
+                                  height: 1.6,
+                                ),
+                              ),
+                              SizedBox(height: 18),
+                              Divider(thickness: 1, color: Colors.teal[100]),
+                              SizedBox(height: 12),
+                              Text(
+                                verse.translation,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.teal[700],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      SizedBox(height: 10),
-                      Text(
-                        verse.arabicText,
-                        textAlign: TextAlign.right,
-                        textDirection:
-                            TextDirection.rtl, // Right-To-Left (arabe)
-                        style: TextStyle(fontSize: 24),
-                      ),
-                      Divider(thickness: 1, color: Colors.grey),
-                      SizedBox(height: 20),
-                      Text(
-                        verse.translation,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      SizedBox(height: 20),
+                      SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () {
                           Navigator.push(
@@ -77,6 +108,21 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           );
                         },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         child: Text('Méditer'),
                       ),
                     ],

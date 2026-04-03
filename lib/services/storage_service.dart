@@ -18,7 +18,6 @@ class StorageService {
     required String invocation,
     required int globalVerseNumber,
   }) async {
-  
     final box = await _getBox();
     await box.put(date, {
       'date': date,
@@ -39,5 +38,18 @@ class StorageService {
   Future<List<Map<String, dynamic>>> getAllEntries() async {
     final box = await _getBox();
     return box.values.cast<Map<String, dynamic>>().toList();
+  }
+
+  int calculateStreak(List<Map<String, dynamic>> entries) {
+    int streak = 0;
+    DateTime currentDate = DateTime.now();
+
+    var mySet = entries.map((e) => e['date']).toSet();
+    while (mySet.contains(currentDate.toIso8601String().split('T')[0])) {
+      streak++;
+      currentDate = currentDate.subtract(Duration(days: 1));
+    }
+
+    return streak;
   }
 }
