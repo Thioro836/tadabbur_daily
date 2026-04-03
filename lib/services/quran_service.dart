@@ -28,28 +28,39 @@ class QuranService {
     );
 
     final response = await http.get(url);
-    
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final List ayahs = data['data'];
 
       // ayahs[0] = texte arabe
       // ayahs[1] = traduction
-    if (ayahs.length < 2) {
+      if (ayahs.length < 2) {
         throw Exception('Réponse API incomplète');
       }
+      String arabicText = ayahs[0]['text'];
+      final int verseInSurah = ayahs[0]['numberInSurah'];
+      final int surahNum = ayahs[0]['surah']['number'];
+
+      // Retirer la Basmala du premier verset (sauf Al-Fatiha et At-Tawba)
+      if (verseInSurah == 1 && surahNum != 1 && surahNum != 9) {
+        arabicText = arabicText.replaceFirst(
+          'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ ',
+          '',
+        );
+      }
+
       return Verse(
-        arabicText: ayahs[0]['text'],
+        arabicText: arabicText,
         translation: ayahs[1]['text'],
-        surahNumber: ayahs[0]['surah']['number'],
+        surahNumber: surahNum,
         surahNameArabic: ayahs[0]['surah']['name'],
         surahNameEnglish: ayahs[0]['surah']['englishName'],
-        verseNumber: ayahs[0]['numberInSurah'],
+        verseNumber: verseInSurah,
         globalVerseNumber: ayahs[0]['number'],
       );
     } else {
       throw Exception('Erreur lors du chargement du verset');
     }
-    
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:tadabbur_daily/models/verse.dart';
 import 'package:tadabbur_daily/services/quran_service.dart';
 import 'package:tadabbur_daily/screens/journal_screen.dart';
@@ -108,11 +109,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                   verse.arabicText,
                                   textAlign: TextAlign.center,
                                   textDirection: TextDirection.rtl,
-                                  style: TextStyle(
+                                  style: GoogleFonts.amiri(
                                     fontSize: 28,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.teal[900],
-                                    height: 1.6,
+                                    height: 1.8,
                                   ),
                                 ),
                                 SizedBox(height: 18),

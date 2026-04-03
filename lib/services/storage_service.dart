@@ -37,7 +37,10 @@ class StorageService {
   // Récupérer toutes les entrées
   Future<List<Map<String, dynamic>>> getAllEntries() async {
     final box = await _getBox();
-    return box.values.cast<Map<String, dynamic>>().toList();
+    return box.values
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
   }
 
   int calculateStreak(List<Map<String, dynamic>> entries) {
@@ -52,6 +55,7 @@ class StorageService {
 
     return streak;
   }
+
   // Sauvegarder la langue choisie
   Future<void> saveLanguage(String language) async {
     final box = await _getBox();

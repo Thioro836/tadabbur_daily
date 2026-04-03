@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:tadabbur_daily/screens/home_screen.dart';
 import 'package:tadabbur_daily/screens/dashboard_screen.dart';
 
@@ -52,7 +53,7 @@ class TadabburApp extends StatelessWidget {
           ),
           margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         ),
-        textTheme: ThemeData.light().textTheme.apply(
+        textTheme: GoogleFonts.poppinsTextTheme().apply(
           bodyColor: Color(0xFF222222),
           displayColor: Color(0xFF00695C),
         ),
