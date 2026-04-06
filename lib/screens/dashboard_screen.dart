@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tadabbur_daily/models/verse.dart';
+import 'package:tadabbur_daily/services/notification_service.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
 import 'package:tadabbur_daily/screens/journal_screen.dart';
 
@@ -13,11 +14,20 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final StorageService _storageService = StorageService();
   late Future<List<Map<String, dynamic>>> _entries;
+  bool _notificationsEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _entries = _storageService.getAllEntries();
+    _loadNotificationStatus();
+  }
+
+  Future<void> _loadNotificationStatus() async {
+    final enabled = await StorageService().getNotificationStatus();
+    setState(() {
+      _notificationsEnabled = enabled;
+    });
   }
 
   @override
@@ -68,6 +78,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       SizedBox(height: 20),
+                      SwitchListTile(
+                        title: Text('🔔 Notifications'),
+                        value: _notificationsEnabled,
+                        onChanged: (value) async {
+                          await StorageService().saveNotification(value);
+                          if (value) {
+                            await NotificationService.scheduleDailyReminder();
+                          } else {
+                            await NotificationService.cancelAll();
+                          }
+                          setState(() {
+                            _notificationsEnabled = value;
+                          });
+                        },
+                      ),
                       ListView.builder(
                         shrinkWrap: true,
                         physics: NeverScrollableScrollPhysics(),

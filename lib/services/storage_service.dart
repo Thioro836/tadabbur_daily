@@ -40,7 +40,9 @@ class StorageService {
     return box.keys
         .where(
           (key) =>
-              !key.toString().startsWith('fav_') && key != 'selected_language',
+              !key.toString().startsWith('fav_') &&
+              key != 'selected_language' &&
+              key != 'notifications_enabled',
         )
         .map((key) => Map<String, dynamic>.from(box.get(key)))
         .toList();
@@ -90,5 +92,16 @@ class StorageService {
         .where((key) => key.toString().startsWith('fav_'))
         .map((key) => Map<String, dynamic>.from(box.get(key)))
         .toList();
+  }
+
+  //sauvegarder les notifications
+  Future<void> saveNotification(bool enabled) async {
+    final box = await _getBox();
+    await box.put('notifications_enabled', enabled);
+  }
+
+  Future<bool> getNotificationStatus() async {
+    final box = await _getBox();
+    return box.get('notifications_enabled', defaultValue: true);
   }
 }

@@ -4,10 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tadabbur_daily/screens/home_screen.dart';
 import 'package:tadabbur_daily/screens/dashboard_screen.dart';
 import 'package:tadabbur_daily/screens/favorites_screen.dart';
+import 'package:tadabbur_daily/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
+  await NotificationService.init();
+  await NotificationService.scheduleDailyReminder(hour: 8, minute: 0);
   runApp(const TadabburApp());
 }
 
@@ -74,7 +77,11 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [HomeScreen(), DashboardScreen(), FavoriteScreen()];
+  final List<Widget> _screens = [
+    HomeScreen(),
+    DashboardScreen(),
+    FavoriteScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -93,10 +100,7 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.bar_chart),
             label: 'Parcours',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favoris',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favoris'),
         ],
       ),
     );
