@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tadabbur_daily/main.dart';
 import 'package:tadabbur_daily/models/verse.dart';
 import 'package:tadabbur_daily/services/notification_service.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
@@ -15,18 +16,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final StorageService _storageService = StorageService();
   late Future<List<Map<String, dynamic>>> _entries;
   bool _notificationsEnabled = true;
+  bool _isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
     _entries = _storageService.getAllEntries();
     _loadNotificationStatus();
+    _loadDarkModeStatus();
   }
 
   Future<void> _loadNotificationStatus() async {
     final enabled = await StorageService().getNotificationStatus();
     setState(() {
       _notificationsEnabled = enabled;
+    });
+  }
+
+  Future<void> _loadDarkModeStatus() async {
+    final isDark = await StorageService().getDarkMode();
+    setState(() {
+      _isDarkMode = isDark;
     });
   }
 
@@ -90,6 +100,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           }
                           setState(() {
                             _notificationsEnabled = value;
+                          });
+                        },
+                      ),
+                      SwitchListTile(
+                        title: Text('🌙 Mode sombre'),
+                        value: _isDarkMode,
+                        onChanged: (value) async {
+                          await StorageService().saveDarkMode(value);
+                          TadabburApp.of(context)?.toggleTheme(value);
+                          setState(() {
+                            _isDarkMode = value;
                           });
                         },
                       ),

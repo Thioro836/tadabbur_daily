@@ -42,7 +42,8 @@ class StorageService {
           (key) =>
               !key.toString().startsWith('fav_') &&
               key != 'selected_language' &&
-              key != 'notifications_enabled',
+              key != 'notifications_enabled' &&
+              key != 'dark_mode_enabled',
         )
         .map((key) => Map<String, dynamic>.from(box.get(key)))
         .toList();
@@ -104,4 +105,12 @@ class StorageService {
     final box = await _getBox();
     return box.get('notifications_enabled', defaultValue: true);
   }
+  Future<void> saveDarkMode(bool enabled) async {
+    final box = await _getBox();
+    await box.put('dark_mode_enabled', enabled);
+  }
+  Future<bool> getDarkMode() async {
+    final box = await _getBox();
+    return box.get('dark_mode_enabled', defaultValue: false);
+}
 }
