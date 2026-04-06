@@ -34,12 +34,15 @@ class StorageService {
     return box.get(date);
   }
 
-  // Récupérer toutes les entrées
+  // Récupérer toutes les entrées (exclure favoris et langue)
   Future<List<Map<String, dynamic>>> getAllEntries() async {
     final box = await _getBox();
-    return box.values
-        .whereType<Map>()
-        .map((e) => Map<String, dynamic>.from(e))
+    return box.keys
+        .where(
+          (key) =>
+              !key.toString().startsWith('fav_') && key != 'selected_language',
+        )
+        .map((key) => Map<String, dynamic>.from(box.get(key)))
         .toList();
   }
 
@@ -66,5 +69,26 @@ class StorageService {
   Future<String> getLanguage() async {
     final box = await _getBox();
     return box.get('selected_language', defaultValue: 'fr');
+  }
+
+  // Sauvegarder un favori
+  Future<void> saveFavorite(Map<String, dynamic> verse) async {
+    // 1. Ouvrir la boîte
+    final box = await _getBox();
+    // 2. Générer une clé unique pour ce verset (ex: "fav_1234" où 1234 est le globalVerseNumber)
+    final key = 'fav_${verse['globalVerseNumber']}';
+    // 3. box.put(clé, verse)
+    await box.put(key, verse);
+  }
+
+  // Récupérer tous les favoris
+  Future<List<Map<String, dynamic>>> getAllFavorites() async {
+    // 1. Ouvrir la boîte
+    final box = await _getBox();
+    // 2. Filtrer les valeurs dont la clé commence par 'fav_'
+    return box.keys
+        .where((key) => key.toString().startsWith('fav_'))
+        .map((key) => Map<String, dynamic>.from(box.get(key)))
+        .toList();
   }
 }

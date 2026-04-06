@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:tadabbur_daily/models/verse.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
+import 'package:tadabbur_daily/screens/journal_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -43,13 +45,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Text(
                         'Aucune méditation pour le moment.\nCommencez par méditer un verset ! 🌙',
                         textAlign: TextAlign.center,
-                         style: TextStyle(fontSize: 16),
+                        style: TextStyle(fontSize: 16),
                       ),
                     );
                   }
                   return Column(
                     children: [
-                    Text(
+                      Text(
                         '🔥 Streak : ${_storageService.calculateStreak(historique)} jours',
                         style: TextStyle(
                           fontSize: 22,
@@ -72,10 +74,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         itemCount: historique.length,
                         itemBuilder: (context, index) {
                           final entry = historique[index];
-                          return Card(
-                            child: ListTile(
-                              title: Text(entry['date']),
-                              subtitle: Text(entry['reflection']),
+                          return InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => JournalScreen(
+                                    verse: Verse(
+                                      arabicText: '',
+                                      translation: '',
+                                      surahNumber: 0,
+                                      surahNameArabic: '',
+                                      surahNameEnglish: '',
+                                      verseNumber: 0,
+                                      globalVerseNumber:
+                                          entry['globalVerseNumber'],
+                                    ),
+                                    initialReflection: entry['reflection'],
+                                    initialIdentification:
+                                        entry['identification'],
+                                    initialInvocation: entry['invocation'],
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Card(
+                              child: ListTile(
+                                title: Text(entry['date']),
+                                subtitle: Text(entry['reflection']),
+                                trailing: Icon(Icons.edit, color: Colors.teal),
+                              ),
                             ),
                           );
                         },

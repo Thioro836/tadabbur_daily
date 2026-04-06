@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tadabbur_daily/screens/home_screen.dart';
 import 'package:tadabbur_daily/screens/dashboard_screen.dart';
+import 'package:tadabbur_daily/screens/favorites_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,7 +74,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [HomeScreen(), DashboardScreen()];
+  final List<Widget> _screens = [HomeScreen(), DashboardScreen(), FavoriteScreen()];
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +92,10 @@ class _MainScreenState extends State<MainScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
             label: 'Parcours',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favoris',
           ),
         ],
       ),

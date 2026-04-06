@@ -4,7 +4,17 @@ import 'package:tadabbur_daily/services/storage_service.dart';
 
 class JournalScreen extends StatefulWidget {
   final Verse verse;
-  const JournalScreen({super.key, required this.verse});
+  final String? initialReflection;
+  final String? initialIdentification;
+  final String? initialInvocation;
+
+  const JournalScreen({
+    super.key,
+    required this.verse,
+    this.initialReflection,
+    this.initialIdentification,
+    this.initialInvocation,
+  });
 
   @override
   _JournalScreenState createState() => _JournalScreenState();
@@ -17,6 +27,14 @@ class _JournalScreenState extends State<JournalScreen> {
   final _reflectionController = TextEditingController();
   final _identificationController = TextEditingController();
   final _invocationController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _reflectionController.text = widget.initialReflection ?? '';
+    _identificationController.text = widget.initialIdentification ?? '';
+    _invocationController.text = widget.initialInvocation ?? '';
+  }
 
   // On n'oublie pas de les disposer pour éviter les fuites de mémoire
   @override
@@ -42,6 +60,12 @@ class _JournalScreenState extends State<JournalScreen> {
                 textAlign: TextAlign.right,
                 textDirection: TextDirection.rtl, // Right-To-Left (arabe)
                 style: TextStyle(fontSize: 24),
+              ),
+              SizedBox(height: 10),
+              Text(
+                widget.verse.translation,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey[800]),
               ),
               Divider(thickness: 1, color: Colors.grey),
               SizedBox(height: 20),

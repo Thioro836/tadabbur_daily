@@ -53,6 +53,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          IconButton(
+            onPressed: () {
+              _loadVerse();
+            },
+            icon: Icon(Icons.refresh, color: Colors.white),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -104,6 +110,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                     letterSpacing: 1.1,
                                   ),
                                 ),
+                                Text(
+                                  verse.surahNameArabic,
+                                  textAlign: TextAlign.center,
+                                  textDirection: TextDirection.rtl,
+                                  style: GoogleFonts.amiri(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.teal[700],
+                                  ),
+                                ),
                                 SizedBox(height: 18),
                                 Text(
                                   verse.arabicText,
@@ -127,6 +143,33 @@ class _HomeScreenState extends State<HomeScreen> {
                                     fontStyle: FontStyle.italic,
                                     color: Colors.teal[700],
                                   ),
+                                ),
+                                SizedBox(height: 12),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.favorite_border,
+                                    color: Colors.teal[700],
+                                  ),
+                                  onPressed: () async {
+                                    await StorageService().saveFavorite({
+                                      'globalVerseNumber':
+                                          verse.globalVerseNumber,
+                                      'surahNameEnglish':
+                                          verse.surahNameEnglish,
+                                      'surahNameArabic': verse.surahNameArabic,
+                                      'surahNumber': verse.surahNumber,
+                                      'verseNumber': verse.verseNumber,
+                                      'arabicText': verse.arabicText,
+                                      'translation': verse.translation,
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Verset ajouté aux favoris ⭐',
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ),
