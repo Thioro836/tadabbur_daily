@@ -12,6 +12,10 @@ void main() async {
   await Hive.initFlutter();
   await NotificationService.init();
   await NotificationService.scheduleDailyReminder(hour: 8, minute: 0);
+
+  // Précharger la police Amiri pour éviter les carrés
+  await GoogleFonts.pendingFonts([GoogleFonts.amiri()]);
+
   runApp(const TadabburApp());
 }
 

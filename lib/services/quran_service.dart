@@ -22,9 +22,9 @@ class QuranService {
         ? 'fr.hamidullah'
         : 'en.sahih';
 
-    // Appel API
+    // Appel API avec édition audio (ar.alafasy = Mishary Alafasy)
     final url = Uri.parse(
-      '$_baseUrl/ayah/$verseNumber/editions/quran-uthmani,$translationEdition',
+      '$_baseUrl/ayah/$verseNumber/editions/quran-uthmani,$translationEdition,ar.alafasy',
     );
 
     final response = await http.get(url);
@@ -35,12 +35,14 @@ class QuranService {
 
       // ayahs[0] = texte arabe
       // ayahs[1] = traduction
-      if (ayahs.length < 2) {
+      // ayahs[2] = audio
+      if (ayahs.length < 3) {
         throw Exception('Réponse API incomplète');
       }
       String arabicText = ayahs[0]['text'];
       final int verseInSurah = ayahs[0]['numberInSurah'];
       final int surahNum = ayahs[0]['surah']['number'];
+      final String? audioUrl = ayahs[2]['audio'];
 
       // Retirer la Basmala du premier verset (sauf Al-Fatiha et At-Tawba)
       if (verseInSurah == 1 && surahNum != 1 && surahNum != 9) {
@@ -58,6 +60,7 @@ class QuranService {
         surahNameEnglish: ayahs[0]['surah']['englishName'],
         verseNumber: verseInSurah,
         globalVerseNumber: ayahs[0]['number'],
+        audioUrl: audioUrl,
       );
     } else {
       throw Exception('Erreur lors du chargement du verset');

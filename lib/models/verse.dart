@@ -6,6 +6,7 @@ class Verse {
   final int surahNumber;
   final int verseNumber;
   final int globalVerseNumber;
+  final String? audioUrl; // URL audio du verset
 
   const Verse({
     required this.arabicText,
@@ -15,5 +16,6 @@ class Verse {
     required this.surahNumber,
     required this.verseNumber,
     required this.globalVerseNumber,
+    this.audioUrl,
   });
 }
