@@ -1,4 +1,4 @@
-package com.example.tadabbur_daily
+package com.thioro.tadabburdaily
 
 import io.flutter.embedding.android.FlutterActivity
 
