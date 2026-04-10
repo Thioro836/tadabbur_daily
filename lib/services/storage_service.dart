@@ -105,12 +105,116 @@ class StorageService {
     final box = await _getBox();
     return box.get('notifications_enabled', defaultValue: true);
   }
+
   Future<void> saveDarkMode(bool enabled) async {
     final box = await _getBox();
     await box.put('dark_mode_enabled', enabled);
   }
+
   Future<bool> getDarkMode() async {
     final box = await _getBox();
     return box.get('dark_mode_enabled', defaultValue: false);
-}
+  }
+
+  // Exporter les données en JSON (backup)
+  Future<String> exportData() async {
+    final box = await _getBox();
+    final entries = <dynamic>[];
+    final favorites = <dynamic>[];
+
+    // Récupérer toutes les entrées
+    for (var key in box.keys) {
+      if (key.toString().startsWith('fav_')) {
+        favorites.add(box.get(key));
+      } else if (!key.toString().startsWith('selected_') &&
+          key != 'notifications_enabled' &&
+          key != 'dark_mode_enabled') {
+        entries.add(box.get(key));
+      }
+    }
+
+    final data = {
+      'entries': entries,
+      'favorites': favorites,
+      'exported_at': DateTime.now().toIso8601String(),
+    };
+
+    return data.toString(); // Ou utiliser json.encode() pour JSON valide
+  }
+
+  // Nettoyer les données plus anciennes que X jours (par défaut 90 jours)
+  Future<int> deleteEntriesOlderThan({int days = 90}) async {
+    final box = await _getBox();
+    int deletedCount = 0;
+    final cutoffDate = DateTime.now().subtract(Duration(days: days));
+
+    final keysToDelete = <String>[];
+    for (var key in box.keys) {
+      if (!key.toString().startsWith('fav_') &&
+          key != 'selected_language' &&
+          key != 'notifications_enabled' &&
+          key != 'dark_mode_enabled') {
+        try {
+          final entryDate = DateTime.parse(key.toString());
+          if (entryDate.isBefore(cutoffDate)) {
+            keysToDelete.add(key.toString());
+          }
+        } catch (e) {
+          // Ignorer les clés qui ne sont pas des dates valides
+        }
+      }
+    }
+
+    for (var key in keysToDelete) {
+      await box.delete(key);
+      deletedCount++;
+    }
+
+    return deletedCount;
+  }
+
+  // Supprimer toutes les données
+  Future<void> deleteAllData() async {
+    final box = await _getBox();
+    await box.clear();
+  }
+
+  // Obtenir des statistiques sur les données stockées
+  Future<Map<String, dynamic>> getStorageStats() async {
+    final box = await _getBox();
+    int entriesCount = 0;
+    int favoritesCount = 0;
+    DateTime? oldestEntry;
+    DateTime? newestEntry;
+
+    for (var key in box.keys) {
+      if (key.toString().startsWith('fav_')) {
+        favoritesCount++;
+      } else if (!key.toString().startsWith('selected_') &&
+          key != 'notifications_enabled' &&
+          key != 'dark_mode_enabled') {
+        entriesCount++;
+        try {
+          final entryDate = DateTime.parse(key.toString());
+          oldestEntry ??= entryDate;
+          if (entryDate.isBefore(oldestEntry)) {
+            oldestEntry = entryDate;
+          }
+          newestEntry ??= entryDate;
+          if (entryDate.isAfter(newestEntry)) {
+            newestEntry = entryDate;
+          }
+        } catch (e) {
+          // Ignorer
+        }
+      }
+    }
+
+    return {
+      'total_entries': entriesCount,
+      'total_favorites': favoritesCount,
+      'oldest_entry': oldestEntry?.toIso8601String(),
+      'newest_entry': newestEntry?.toIso8601String(),
+    };
+  }
 }
