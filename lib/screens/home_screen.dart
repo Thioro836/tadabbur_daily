@@ -178,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       fontSize: 28,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.teal[900],
-                                      height: 1.8,
+                                      height: 2.2,
                                     ),
                                   ),
                                   SizedBox(height: 18),
