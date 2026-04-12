@@ -19,19 +19,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<Verse>? _verseFuture;
   String _language = 'fr';
   bool _isPlaying = false;
+  String? _currentAudioUrl;
 
   @override
   void initState() {
     super.initState();
     _loadVerse();
 
-    // Écouter les changements d'état du lecteur
     _audioPlayer.playerStateStream.listen((state) {
       if (mounted) {
         setState(() {
           _isPlaying = state.playing;
         });
-        // Remettre à zéro quand la lecture est terminée
         if (state.processingState == ProcessingState.completed) {
           _audioPlayer.stop();
           _audioPlayer.seek(Duration.zero);
@@ -47,9 +46,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadVerse() async {
-    // Arrêter l'audio en cours avant de charger un nouveau verset
     await _audioPlayer.stop();
-    _currentAudioUrl = null; // Reset l'URL audio
+    _currentAudioUrl = null;
     final lang = await StorageService().getLanguage();
     setState(() {
       _language = lang;
@@ -57,15 +55,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  String? _currentAudioUrl;
-
   Future<void> _toggleAudio(String? audioUrl) async {
     if (audioUrl == null) return;
 
     if (_isPlaying) {
       await _audioPlayer.pause();
     } else {
-      // Si nouvel URL ou pas encore chargé, charger l'audio
       if (_currentAudioUrl != audioUrl) {
         _currentAudioUrl = audioUrl;
         await _audioPlayer.setUrl(audioUrl);
@@ -196,50 +191,57 @@ class _HomeScreenState extends State<HomeScreen> {
                                       color: Colors.teal[700],
                                     ),
                                   ),
-                                  SizedBox(height: 12),
-                                  // Bouton Audio 🎧
+                                  SizedBox(height: 16),
+                                  // Bouton Audio centré
                                   if (verse.audioUrl != null)
-                                    IconButton(
+                                    Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 4),
+                                        child: IconButton(
+                                          icon: Icon(
+                                            _isPlaying
+                                                ? Icons.pause_circle
+                                                : Icons.play_circle,
+                                            color: Colors.teal[700],
+                                            size: 48,
+                                          ),
+                                          onPressed: () async {
+                                            await _toggleAudio(verse.audioUrl);
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  SizedBox(height: 8),
+                                  // Bouton favori centré
+                                  Center(
+                                    child: IconButton(
                                       icon: Icon(
-                                        _isPlaying
-                                            ? Icons.pause_circle
-                                            : Icons.play_circle,
+                                        Icons.favorite_border,
                                         color: Colors.teal[700],
-                                        size: 48,
                                       ),
                                       onPressed: () async {
-                                        await _toggleAudio(verse.audioUrl);
+                                        await StorageService().saveFavorite({
+                                          'globalVerseNumber':
+                                              verse.globalVerseNumber,
+                                          'surahNameEnglish':
+                                              verse.surahNameEnglish,
+                                          'surahNameArabic':
+                                              verse.surahNameArabic,
+                                          'surahNumber': verse.surahNumber,
+                                          'verseNumber': verse.verseNumber,
+                                          'arabicText': verse.arabicText,
+                                          'translation': verse.translation,
+                                        });
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Verset ajouté aux favoris ⭐',
+                                            ),
+                                          ),
+                                        );
                                       },
                                     ),
-                                  SizedBox(height: 12),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.favorite_border,
-                                      color: Colors.teal[700],
-                                    ),
-                                    onPressed: () async {
-                                      await StorageService().saveFavorite({
-                                        'globalVerseNumber':
-                                            verse.globalVerseNumber,
-                                        'surahNameEnglish':
-                                            verse.surahNameEnglish,
-                                        'surahNameArabic':
-                                            verse.surahNameArabic,
-                                        'surahNumber': verse.surahNumber,
-                                        'verseNumber': verse.verseNumber,
-                                        'arabicText': verse.arabicText,
-                                        'translation': verse.translation,
-                                      });
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Verset ajouté aux favoris ⭐',
-                                          ),
-                                        ),
-                                      );
-                                    },
                                   ),
                                 ],
                               ),
