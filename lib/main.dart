@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tadabbur_daily/screens/home_screen.dart';
 import 'package:tadabbur_daily/screens/dashboard_screen.dart';
 import 'package:tadabbur_daily/screens/favorites_screen.dart';
+import 'package:tadabbur_daily/screens/settings_screen.dart';
 import 'package:tadabbur_daily/services/notification_service.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
 
@@ -156,6 +157,7 @@ class _MainScreenState extends State<MainScreen> {
     HomeScreen(),
     DashboardScreen(),
     FavoriteScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -163,6 +165,7 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
@@ -176,6 +179,10 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Parcours',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favoris'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Paramètres',
+          ),
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:hive/hive.dart';
 
 class StorageService {
@@ -161,7 +162,7 @@ class StorageService {
       'exported_at': DateTime.now().toIso8601String(),
     };
 
-    return data.toString(); // Ou utiliser json.encode() pour JSON valide
+    return jsonEncode(data);
   }
 
   // Nettoyer les données plus anciennes que X jours (par défaut 90 jours)
@@ -238,5 +239,34 @@ class StorageService {
       'oldest_entry': oldestEntry?.toIso8601String(),
       'newest_entry': newestEntry?.toIso8601String(),
     };
+  }
+
+  // Regrouper les entrées par mois (ex: "2026-04" => [...])
+  Map<String, List<Map<String, dynamic>>> groupEntriesByMonth(
+    List<Map<String, dynamic>> entries,
+  ) {
+    final Map<String, List<Map<String, dynamic>>> grouped = {};
+
+    for (var entry in entries) {
+      final date = entry['date'] as String?;
+      if (date != null && date.length >= 7) {
+        final monthKey = date.substring(0, 7); // "2026-04"
+        grouped.putIfAbsent(monthKey, () => []);
+        grouped[monthKey]!.add(entry);
+      }
+    }
+
+    // Trier les mois du plus récent au plus ancien
+    final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+
+    return Map.fromEntries(
+      sortedKeys.map((key) => MapEntry(key, grouped[key]!)),
+    );
+  }
+
+  // Supprimer un favori
+  Future<void> deleteFavorite(int globalVerseNumber) async {
+    final box = await _getBox();
+    await box.delete('fav_$globalVerseNumber');
   }
 }

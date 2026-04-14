@@ -78,7 +78,9 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                                     style: GoogleFonts.amiri(
                                       fontSize: 28,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.teal[900],
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                       height: 1.8,
                                     ),
                                   ),
@@ -89,7 +91,9 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                                     style: TextStyle(
                                       fontSize: 17,
                                       fontStyle: FontStyle.italic,
-                                      color: Colors.teal[700],
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.85),
                                     ),
                                   ),
                                 ],

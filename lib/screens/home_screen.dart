@@ -250,7 +250,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             elevation: 4,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
-                              side: BorderSide(color: Colors.teal, width: 2),
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 2,
+                              ),
                             ),
                             margin: EdgeInsets.symmetric(
                               vertical: 24,
@@ -270,7 +273,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.teal[800],
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                       letterSpacing: 1.1,
                                     ),
                                   ),
@@ -281,7 +286,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: GoogleFonts.amiri(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.teal[700],
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                     ),
                                   ),
                                   SizedBox(height: 18),
@@ -292,14 +299,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: GoogleFonts.amiri(
                                       fontSize: 28,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.teal[900],
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                       height: 2.2,
                                     ),
                                   ),
                                   SizedBox(height: 18),
                                   Divider(
                                     thickness: 1,
-                                    color: Colors.teal[100],
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary.withOpacity(0.3),
                                   ),
                                   SizedBox(height: 12),
                                   Text(
@@ -308,7 +319,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: TextStyle(
                                       fontSize: 17,
                                       fontStyle: FontStyle.italic,
-                                      color: Colors.teal[700],
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface.withOpacity(0.85),
                                     ),
                                   ),
                                   SizedBox(height: 16),
@@ -324,7 +337,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                             _isPlaying
                                                 ? Icons.pause_circle
                                                 : Icons.play_circle,
-                                            color: Colors.teal[700],
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                             size: 48,
                                           ),
                                           onPressed: () async {
@@ -341,7 +356,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       IconButton(
                                         icon: Icon(
                                           Icons.favorite_border,
-                                          color: Colors.teal[700],
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
                                         ),
                                         onPressed: () async {
                                           await StorageService().saveFavorite({
@@ -371,7 +388,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       IconButton(
                                         icon: Icon(
                                           Icons.share,
-                                          color: Colors.teal[700],
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
                                         ),
                                         onPressed: () async {
                                           final text =

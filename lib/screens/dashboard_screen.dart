@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:tadabbur_daily/main.dart';
 import 'package:tadabbur_daily/models/verse.dart';
-import 'package:tadabbur_daily/services/notification_service.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
 import 'package:tadabbur_daily/screens/journal_screen.dart';
 
@@ -16,29 +14,11 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final StorageService _storageService = StorageService();
   late Future<List<Map<String, dynamic>>> _entries;
-  bool _notificationsEnabled = true;
-  bool _isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
     _entries = _storageService.getAllEntries();
-    _loadNotificationStatus();
-    _loadDarkModeStatus();
-  }
-
-  Future<void> _loadNotificationStatus() async {
-    final enabled = await StorageService().getNotificationStatus();
-    setState(() {
-      _notificationsEnabled = enabled;
-    });
-  }
-
-  Future<void> _loadDarkModeStatus() async {
-    final isDark = await StorageService().getDarkMode();
-    setState(() {
-      _isDarkMode = isDark;
-    });
   }
 
   // Graphique des 7 derniers jours
@@ -110,7 +90,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       barRods: [
                         BarChartRodData(
                           toY: values[i],
-                          color: values[i] > 0 ? Colors.teal : Colors.grey[300],
+                          color: values[i] > 0
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey[300],
                           width: 20,
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -124,6 +106,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
+  }
+
+  // Noms des mois en français
+  String _monthName(String monthKey) {
+    final months = {
+      '01': 'Janvier',
+      '02': 'Février',
+      '03': 'Mars',
+      '04': 'Avril',
+      '05': 'Mai',
+      '06': 'Juin',
+      '07': 'Juillet',
+      '08': 'Août',
+      '09': 'Septembre',
+      '10': 'Octobre',
+      '11': 'Novembre',
+      '12': 'Décembre',
+    };
+    final parts = monthKey.split('-');
+    return '${months[parts[1]] ?? parts[1]} ${parts[0]}';
   }
 
   @override
@@ -155,14 +157,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     );
                   }
+
+                  // Grouper par mois
+                  final grouped = _storageService.groupEntriesByMonth(
+                    historique,
+                  );
+
                   return Column(
                     children: [
+                      // Stats
                       Text(
                         '🔥 Streak : ${_storageService.calculateStreak(historique)} jours',
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Colors.teal[800],
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       SizedBox(height: 10),
@@ -174,75 +183,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       SizedBox(height: 20),
+
                       // Graphique des 7 derniers jours
                       _buildWeeklyChart(historique),
                       SizedBox(height: 20),
-                      SwitchListTile(
-                        title: Text('🔔 Notifications'),
-                        value: _notificationsEnabled,
-                        onChanged: (value) async {
-                          await StorageService().saveNotification(value);
-                          if (value) {
-                            await NotificationService.scheduleDailyReminder();
-                          } else {
-                            await NotificationService.cancelAll();
-                          }
-                          setState(() {
-                            _notificationsEnabled = value;
-                          });
-                        },
+
+                      // Historique groupé par mois
+                      Text(
+                        '📅 Historique',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      SwitchListTile(
-                        title: Text('🌙 Mode sombre'),
-                        value: _isDarkMode,
-                        onChanged: (value) async {
-                          await StorageService().saveDarkMode(value);
-                          TadabburApp.of(context)?.toggleTheme(value);
-                          setState(() {
-                            _isDarkMode = value;
-                          });
-                        },
-                      ),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: historique.length,
-                        itemBuilder: (context, index) {
-                          final entry = historique[index];
-                          return InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => JournalScreen(
-                                    verse: Verse(
-                                      arabicText: '',
-                                      translation: '',
-                                      surahNumber: 0,
-                                      surahNameArabic: '',
-                                      surahNameEnglish: '',
-                                      verseNumber: 0,
-                                      globalVerseNumber:
-                                          entry['globalVerseNumber'],
+                      SizedBox(height: 10),
+                      ...grouped.entries.map((monthGroup) {
+                        final monthLabel = _monthName(monthGroup.key);
+                        final monthEntries = monthGroup.value;
+                        return Card(
+                          margin: EdgeInsets.only(bottom: 8),
+                          child: ExpansionTile(
+                            title: Text(
+                              '$monthLabel (${monthEntries.length})',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            initiallyExpanded:
+                                monthGroup.key == grouped.keys.first,
+                            children: monthEntries.map((entry) {
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => JournalScreen(
+                                        verse: Verse(
+                                          arabicText: '',
+                                          translation: '',
+                                          surahNumber: 0,
+                                          surahNameArabic: '',
+                                          surahNameEnglish: '',
+                                          verseNumber: 0,
+                                          globalVerseNumber:
+                                              entry['globalVerseNumber'],
+                                        ),
+                                        initialReflection: entry['reflection'],
+                                        initialIdentification:
+                                            entry['identification'],
+                                        initialInvocation: entry['invocation'],
+                                      ),
                                     ),
-                                    initialReflection: entry['reflection'],
-                                    initialIdentification:
-                                        entry['identification'],
-                                    initialInvocation: entry['invocation'],
+                                  );
+                                },
+                                child: ListTile(
+                                  title: Text(entry['date']),
+                                  subtitle: Text(
+                                    entry['reflection'],
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  trailing: Icon(
+                                    Icons.edit,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                                 ),
                               );
-                            },
-                            child: Card(
-                              child: ListTile(
-                                title: Text(entry['date']),
-                                subtitle: Text(entry['reflection']),
-                                trailing: Icon(Icons.edit, color: Colors.teal),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                            }).toList(),
+                          ),
+                        );
+                      }),
                     ],
                   );
                 },
