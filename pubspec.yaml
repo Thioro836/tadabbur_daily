@@ -41,6 +41,9 @@ dependencies:
   flutter_local_notifications: ^21.0.0
   timezone: ^0.11.0
   just_audio: ^0.10.5
+  share_plus: ^13.0.0
+  flutter_native_splash: ^2.4.7
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:
@@ -103,3 +106,12 @@ flutter_launcher_icons:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_native_splash:
+  color: "#E0F2F1"
+  image: assets/icon/logo.png
+  color_dark: "#121212"
+  image_dark: assets/icon/logo.png
+  android: true
+  ios: true
+  web: true

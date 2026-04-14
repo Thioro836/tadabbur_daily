@@ -9,8 +9,8 @@ class StorageService {
   }
 
   // Sauvegarder une entrée
-  // Clé = la date du jour (ex: "2026-03-24")
-  // Valeur = un Map avec reflection, identification, invocation, globalVerseNumber
+  // Clé = date + numéro du verset (ex: "2026-03-24_1234")
+  // Permet plusieurs méditations par jour
   Future<void> saveEntry({
     required String date,
     required String reflection,
@@ -19,7 +19,8 @@ class StorageService {
     required int globalVerseNumber,
   }) async {
     final box = await _getBox();
-    await box.put(date, {
+    final key = '${date}_$globalVerseNumber';
+    await box.put(key, {
       'date': date,
       'reflection': reflection,
       'identification': identification,
@@ -43,7 +44,8 @@ class StorageService {
               !key.toString().startsWith('fav_') &&
               key != 'selected_language' &&
               key != 'notifications_enabled' &&
-              key != 'dark_mode_enabled',
+              key != 'dark_mode_enabled' &&
+              key != 'daily_verse',
         )
         .map((key) => Map<String, dynamic>.from(box.get(key)))
         .toList();
@@ -114,6 +116,26 @@ class StorageService {
   Future<bool> getDarkMode() async {
     final box = await _getBox();
     return box.get('dark_mode_enabled', defaultValue: false);
+  }
+
+  // Sauvegarder le verset du jour
+  Future<void> saveDailyVerse(Map<String, dynamic> verseData) async {
+    final box = await _getBox();
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    await box.put('daily_verse', {'date': today, ...verseData});
+  }
+
+  // Récupérer le verset du jour (null si pas de verset aujourd'hui)
+  Future<Map<String, dynamic>?> getDailyVerse() async {
+    final box = await _getBox();
+    final data = box.get('daily_verse');
+    if (data == null) return null;
+    final saved = Map<String, dynamic>.from(data);
+    final today = DateTime.now().toIso8601String().split('T')[0];
+    if (saved['date'] == today) {
+      return saved;
+    }
+    return null; // Verset périmé, il faut en charger un nouveau
   }
 
   // Exporter les données en JSON (backup)

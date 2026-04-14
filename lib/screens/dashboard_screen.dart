@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:tadabbur_daily/main.dart';
 import 'package:tadabbur_daily/models/verse.dart';
 import 'package:tadabbur_daily/services/notification_service.dart';
@@ -38,6 +39,91 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _isDarkMode = isDark;
     });
+  }
+
+  // Graphique des 7 derniers jours
+  Widget _buildWeeklyChart(List<Map<String, dynamic>> historique) {
+    final now = DateTime.now();
+    final days = <String>['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+    // Compter les méditations par jour sur les 7 derniers jours
+    final List<double> values = List.generate(7, (i) {
+      final date = now.subtract(Duration(days: 6 - i));
+      final dateStr = date.toIso8601String().split('T')[0];
+      return historique.where((e) => e['date'] == dateStr).length.toDouble();
+    });
+
+    final List<String> labels = List.generate(7, (i) {
+      final date = now.subtract(Duration(days: 6 - i));
+      return days[date.weekday - 1];
+    });
+
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '📈 7 derniers jours',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 12),
+            SizedBox(
+              height: 150,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: values
+                      .reduce((a, b) => a > b ? a : b)
+                      .clamp(1, 10)
+                      .toDouble(),
+                  barTouchData: BarTouchData(enabled: false),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            labels[value.toInt()],
+                            style: TextStyle(fontSize: 11),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  gridData: FlGridData(show: false),
+                  barGroups: List.generate(7, (i) {
+                    return BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: values[i],
+                          color: values[i] > 0 ? Colors.teal : Colors.grey[300],
+                          width: 20,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    );
+                  }),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -87,6 +173,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      SizedBox(height: 20),
+                      // Graphique des 7 derniers jours
+                      _buildWeeklyChart(historique),
                       SizedBox(height: 20),
                       SwitchListTile(
                         title: Text('🔔 Notifications'),

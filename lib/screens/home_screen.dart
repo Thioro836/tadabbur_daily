@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tadabbur_daily/models/verse.dart';
 import 'package:tadabbur_daily/services/quran_service.dart';
 import 'package:tadabbur_daily/screens/journal_screen.dart';
@@ -51,7 +54,120 @@ class _HomeScreenState extends State<HomeScreen> {
     final lang = await StorageService().getLanguage();
     setState(() {
       _language = lang;
-      _verseFuture = _quranService.fetchRandomVerse(language: lang);
+      _verseFuture = _loadDailyVerse(lang);
+    });
+  }
+
+  // Charge le verset du jour depuis le cache, ou un nouveau si périmé
+  Future<Verse> _loadDailyVerse(String lang) async {
+    final saved = await StorageService().getDailyVerse();
+    if (saved != null && saved['language'] == lang) {
+      return Verse(
+        arabicText: saved['arabicText'],
+        translation: saved['translation'],
+        surahNumber: saved['surahNumber'],
+        surahNameArabic: saved['surahNameArabic'],
+        surahNameEnglish: saved['surahNameEnglish'],
+        verseNumber: saved['verseNumber'],
+        globalVerseNumber: saved['globalVerseNumber'],
+        audioUrl: saved['audioUrl'],
+      );
+    }
+    // Pas de verset aujourd'hui ou langue différente → en chercher un nouveau
+    final verse = await _quranService.fetchRandomVerse(language: lang);
+    await StorageService().saveDailyVerse({
+      'arabicText': verse.arabicText,
+      'translation': verse.translation,
+      'surahNumber': verse.surahNumber,
+      'surahNameArabic': verse.surahNameArabic,
+      'surahNameEnglish': verse.surahNameEnglish,
+      'verseNumber': verse.verseNumber,
+      'globalVerseNumber': verse.globalVerseNumber,
+      'audioUrl': verse.audioUrl,
+      'language': lang,
+    });
+    return verse;
+  }
+
+  // Forcer un nouveau verset aléatoire (bouton refresh)
+  Future<void> _refreshVerse() async {
+    await _audioPlayer.stop();
+    _currentAudioUrl = null;
+    final lang = await StorageService().getLanguage();
+    final verse = _quranService.fetchRandomVerse(language: lang);
+    setState(() {
+      _language = lang;
+      _verseFuture = verse;
+    });
+  }
+
+  // Afficher le sélecteur de sourate
+  void _showSurahPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          minChildSize: 0.3,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Choisir une sourate',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: 114,
+                    itemBuilder: (context, index) {
+                      final surahNum = index + 1;
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.teal,
+                          child: Text(
+                            '$surahNum',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
+                        title: Text(QuranService.surahNamesArabic[index]),
+                        subtitle: Text(
+                          '${QuranService.versesPerSurah[index]} versets',
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _loadVerseFromSurah(surahNum);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Charger un verset d'une sourate spécifique
+  Future<void> _loadVerseFromSurah(int surahNumber) async {
+    await _audioPlayer.stop();
+    _currentAudioUrl = null;
+    setState(() {
+      _verseFuture = _quranService.fetchVerseFromSurah(
+        surahNumber: surahNumber,
+        language: _language,
+      );
     });
   }
 
@@ -93,9 +209,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             onPressed: () {
-              _loadVerse();
+              _refreshVerse();
             },
             icon: Icon(Icons.refresh, color: Colors.white),
+          ),
+          IconButton(
+            onPressed: () => _showSurahPicker(),
+            icon: Icon(Icons.search, color: Colors.white),
           ),
         ],
       ),
@@ -196,7 +316,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   if (verse.audioUrl != null)
                                     Center(
                                       child: Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 4,
+                                        ),
                                         child: IconButton(
                                           icon: Icon(
                                             _isPlaying
@@ -212,36 +334,76 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ),
                                   SizedBox(height: 8),
-                                  // Bouton favori centré
-                                  Center(
-                                    child: IconButton(
-                                      icon: Icon(
-                                        Icons.favorite_border,
-                                        color: Colors.teal[700],
-                                      ),
-                                      onPressed: () async {
-                                        await StorageService().saveFavorite({
-                                          'globalVerseNumber':
-                                              verse.globalVerseNumber,
-                                          'surahNameEnglish':
-                                              verse.surahNameEnglish,
-                                          'surahNameArabic':
-                                              verse.surahNameArabic,
-                                          'surahNumber': verse.surahNumber,
-                                          'verseNumber': verse.verseNumber,
-                                          'arabicText': verse.arabicText,
-                                          'translation': verse.translation,
-                                        });
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Verset ajouté aux favoris ⭐',
+                                  // Boutons favori et partage
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.favorite_border,
+                                          color: Colors.teal[700],
+                                        ),
+                                        onPressed: () async {
+                                          await StorageService().saveFavorite({
+                                            'globalVerseNumber':
+                                                verse.globalVerseNumber,
+                                            'surahNameEnglish':
+                                                verse.surahNameEnglish,
+                                            'surahNameArabic':
+                                                verse.surahNameArabic,
+                                            'surahNumber': verse.surahNumber,
+                                            'verseNumber': verse.verseNumber,
+                                            'arabicText': verse.arabicText,
+                                            'translation': verse.translation,
+                                          });
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Verset ajouté aux favoris ⭐',
+                                              ),
                                             ),
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                          );
+                                        },
+                                      ),
+                                      SizedBox(width: 16),
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.share,
+                                          color: Colors.teal[700],
+                                        ),
+                                        onPressed: () async {
+                                          final text =
+                                              '${verse.arabicText}\n\n${verse.translation}\n\n— ${verse.surahNameEnglish} (${verse.surahNumber}:${verse.verseNumber})';
+
+                                          // Sur mobile → menu de partage natif
+                                          // Sur desktop/web → copie dans le presse-papier
+                                          if (!kIsWeb &&
+                                              (defaultTargetPlatform ==
+                                                      TargetPlatform.android ||
+                                                  defaultTargetPlatform ==
+                                                      TargetPlatform.iOS)) {
+                                            await SharePlus.instance.share(
+                                              ShareParams(text: text),
+                                            );
+                                          } else {
+                                            await Clipboard.setData(
+                                              ClipboardData(text: text),
+                                            );
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Verset copié ! 📋',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
