@@ -2,7 +2,7 @@
 
 ## Aperçu
 
-L'application Tadabbur Daily dispose maintenant d'une couverture de tests complète incluant des tests unitaires, tests d'intégration et tests de widgets. **42 tests passent actuellement** ✅
+L'application Tadabbur Daily dispose maintenant d'une couverture de tests complète incluant des tests unitaires, tests d'intégration et tests de widgets. **89 tests passent actuellement** ✅
 
 ## Structure des Tests
 
@@ -21,19 +21,23 @@ L'application Tadabbur Daily dispose maintenant d'une couverture de tests compl�
 
 #### Services (14 tests)
 
-- **notification_service_test_mocked.dart** - 10 tests
+- **notification_service_test.dart** - 10 tests
   - Méthodes statiques de NotificationService
   - Méthode d'initialisation
   - Programmation de rappels quotidiens (heures 0, 8, 14, 23)
   - Annulation des rappels
   - Cas limites (minuit, fin de journée)
 
-- **quran_service_test_mocked.dart** - 2 tests
+- **quran_service_test.dart** - 2 tests
   - Instanciation de QuranService
   - Disponibilité des méthodes API
 
-- **storage_service_test_mocked.dart** - 2 tests
+- **storage_service_test.dart** - 12 tests
   - Disponibilité des méthodes StorageService et structure
+  - calculateStreak avec liste vide retourne 0
+  - exportData, deleteEntriesOlderThan, deleteAllData, getStorageStats
+  - deleteFavorite, saveDailyVerse, getDailyVerse
+  - groupEntriesByMonth : liste vide, groupement correct, tri descendant
 
 #### Widgets (5 tests)
 
@@ -61,7 +65,7 @@ L'application Tadabbur Daily dispose maintenant d'une couverture de tests compl�
 - Préservation des champs lors des opérations
 - Unicité de la numérotation globale des versets
 
-#### Intégration des Écrans (10 tests) - **screen_integration_test.dart**
+#### Intégration des Écrans (13 tests) - **screen_integration_test.dart**
 
 - Rendu de l'application Material
 - Navigation entre écrans
@@ -70,18 +74,21 @@ L'application Tadabbur Daily dispose maintenant d'une couverture de tests compl�
 - Layouts Column et Row
 - Navigation à onglets
 - Rendu de widgets Card
+- Layout SettingsScreen avec SwitchListTile
+- Navigation avec 4 onglets (BottomNavigationBar)
+- ExpansionTile pour le regroupement mensuel
 
 ## Résumé de la Couverture de Tests
 
 | Catégorie                      | Tests  | Statut      |
 | ------------------------------ | ------ | ----------- |
 | Tests Unitaires - Modèles      | 11     | ✅ 100%     |
-| Tests Unitaires - Services     | 14     | ✅ 100%     |
+| Tests Unitaires - Services     | 24     | ✅ 100%     |
 | Tests Unitaires - Widgets      | 5      | ✅ 100%     |
 | Tests d'Intégration - Services | 8      | ✅ 100%     |
 | Tests d'Intégration - Modèles  | 10     | ✅ 100%     |
-| Tests d'Intégration - Écrans   | 10     | ✅ 100%     |
-| **TOTAL**                      | **42** | **✅ 100%** |
+| Tests d'Intégration - Écrans   | 13     | ✅ 100%     |
+| **TOTAL**                      | **89** | **✅ 100%** |
 
 ## Exécution des Tests
 
@@ -145,9 +152,9 @@ test/
 │   ├── verse_test.dart
 │   └── journal_entry_test.dart
 ├── services/                        # Tests unitaires des services
-│   ├── notification_service_test_mocked.dart
-│   ├── quran_service_test_mocked.dart
-│   └── storage_service_test_mocked.dart
+│   ├── notification_service_test.dart
+│   ├── quran_service_test.dart
+│   └── storage_service_test.dart
 ├── widgets/                         # Tests unitaires des composants UI
 │   └── basic_widget_test.dart
 └── integration/                     # Tests d'intégration

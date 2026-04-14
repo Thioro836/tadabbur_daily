@@ -7,17 +7,22 @@ Une application Flutter conçue pour vous aider à méditer et réfléchir sur l
 ## ✨ Features
 
 - 📖 **Verset Aléatoire Quotidien** - Accédez à un nouveau verset chaque jour via l'API Al-Quran Cloud
-- 🔊 **Audio des Versets** - Écoutez les récitations (Mishary Alafasy)
+- � **Recherche par Sourate** - Choisissez parmi les 114 sourates
+- �🔊 **Audio des Versets** - Écoutez les récitations (Mishary Alafasy)
 - 📝 **Journal de Réflexion** - Enregistrez vos pensées avec 3 catégories:
   - Ce qui m'a marqué
   - Comment je m'y identifie
   - Mon du'a (invocation)
-- 🔥 **Statistiques** - Suivi du streak de méditation quotidienne
+- 🔥 **Statistiques** - Streak, total, graphique hebdomadaire (fl_chart)
+- 📅 **Historique par mois** - Entrées regroupées avec sections repliables
 - ⭐ **Favoris** - Sauvegardez vos versets préférés
-- 🔔 **Notifications** - Rappels quotidiens configurables
+- � **Partage** - Partagez un verset (mobile) ou copiez-le (desktop/web)
+- �🔔 **Notifications** - Rappels quotidiens configurables
 - 🌓 **Thème Sombre/Clair** - Interface adaptée à vos préférences
 - 🌐 **Multilingue** - Support FR/EN avec polices Amiri pour l'arabe
 - 💾 **Stockage Local** - Toutes vos données sauvegardées localement avec Hive
+- 🗂️ **Gestion des données** - Export JSON, nettoyage automatique (+90j), suppression totale
+- 🎨 **Splash Screen** - Écran de démarrage personnalisé
 
 ## 📋 Prerequisites
 
@@ -58,18 +63,19 @@ flutter run
 
 ```
 lib/
-├── main.dart                 # Point d'entrée + ThemeData
+├── main.dart                 # Point d'entrée + ThemeData + Navigation 4 onglets
 ├── models/
-│   ├── verse.dart           # Modèle Verse
-│   └── journal_entry.dart   # Modèle JournalEntry
+│   ├── verse.dart           # Modèle Verse (avec audioUrl)
+│   └── journal_entry.dart   # Modèle JournalEntry (avec copyWith)
 ├── screens/
-│   ├── home_screen.dart     # Écran principal (verset + audio)
-│   ├── dashboard_screen.dart # Statistiques et streak
-│   ├── journal_screen.dart  # Édition du journal
-│   └── favorites_screen.dart# Liste des favoris
+│   ├── home_screen.dart     # Verset du jour + audio + recherche sourate
+│   ├── dashboard_screen.dart # Stats, chart hebdo, historique par mois
+│   ├── journal_screen.dart  # Édition du journal (3 champs)
+│   ├── favorites_screen.dart# Liste des favoris
+│   └── settings_screen.dart # Paramètres + gestion des données
 └── services/
     ├── quran_service.dart       # Appels API Al-Quran Cloud
-    ├── storage_service.dart     # Stockage local (Hive)
+    ├── storage_service.dart     # Stockage local (Hive) + export/nettoyage
     └── notification_service.dart# Notifications locales
 ```
 
@@ -82,6 +88,10 @@ lib/
 - **flutter_local_notifications** - Notifications du système
 - **just_audio** - Lecture audio des versets
 - **timezone** - Gestion des fuseaux horaires
+- **share_plus** - Partage natif (mobile) / Presse-papier (desktop)
+- **fl_chart** - Graphique hebdomadaire
+- **flutter_native_splash** - Splash screen personnalisé
+- **flutter_launcher_icons** - Icône de l'app
 
 ## 🔔 Configuration des Notifications
 
@@ -148,10 +158,12 @@ flutter doctor
 ## 🏅 État du Projet
 
 ✅ Code compilé avec succès  
+✅ 89 tests passent (unitaires + intégration + widgets)  
 ✅ Toutes permissions Android ajoutées  
 ✅ Configuration iOS complète  
-✅ Tests web release réussis  
-✅ Prêt pour production
+✅ Build AAB automatisé via GitHub Actions  
+✅ Signature release configurée (keystore)  
+✅ Prêt pour publication Google Play Store
 
 ## 🛠️ Développement
 
@@ -179,8 +191,9 @@ flutter run
 
 ### Hive Storage
 
-- **Clés de journal**: `YYYY-MM-DD` → Map de réflexions
+- **Clés de journal**: `YYYY-MM-DD_<globalVerseNumber>` → Map de réflexions (plusieurs méditations/jour)
 - **Clé favoris**: `fav_<global_verse_number>`
+- **Clé verset du jour**: `daily_verse` (cache quotidien avec date + langue)
 - **Clé langue**: `selected_language` (FR/EN)
 - **Clé notifications**: `notifications_enabled`
 - **Clé thème**: `dark_mode_enabled`

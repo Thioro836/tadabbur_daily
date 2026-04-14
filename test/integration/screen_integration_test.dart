@@ -236,5 +236,153 @@ void main() {
       expect(find.text('Card Title'), findsOneWidget);
       expect(find.text('Card Content'), findsOneWidget);
     });
+
+    // ---- Tests v6 : SettingsScreen layout ----
+
+    testWidgets('Settings screen layout with SwitchListTile', (
+      WidgetTester tester,
+    ) async {
+      bool notifEnabled = true;
+      bool darkMode = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('Paramètres')),
+                body: ListView(
+                  children: [
+                    SwitchListTile(
+                      title: const Text('Notifications'),
+                      value: notifEnabled,
+                      onChanged: (val) => setState(() => notifEnabled = val),
+                    ),
+                    SwitchListTile(
+                      title: const Text('Mode sombre'),
+                      value: darkMode,
+                      onChanged: (val) => setState(() => darkMode = val),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.download),
+                      title: const Text('Exporter mes données'),
+                      onTap: () {},
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.cleaning_services),
+                      title: const Text('Nettoyer (+90 jours)'),
+                      onTap: () {},
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.delete_forever),
+                      title: const Text('Tout supprimer'),
+                      onTap: () {},
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(find.text('Paramètres'), findsOneWidget);
+      expect(find.text('Notifications'), findsOneWidget);
+      expect(find.text('Mode sombre'), findsOneWidget);
+      expect(find.text('Exporter mes données'), findsOneWidget);
+      expect(find.text('Nettoyer (+90 jours)'), findsOneWidget);
+      expect(find.text('Tout supprimer'), findsOneWidget);
+      expect(find.byType(SwitchListTile), findsNWidgets(2));
+    });
+
+    testWidgets('Bottom navigation with 4 tabs', (WidgetTester tester) async {
+      int currentIndex = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: StatefulBuilder(
+            builder: (context, setState) {
+              return Scaffold(
+                body: Center(child: Text('Tab $currentIndex')),
+                bottomNavigationBar: BottomNavigationBar(
+                  type: BottomNavigationBarType.fixed,
+                  currentIndex: currentIndex,
+                  onTap: (index) => setState(() => currentIndex = index),
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.menu_book),
+                      label: 'Verset',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.bar_chart),
+                      label: 'Parcours',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.favorite),
+                      label: 'Favoris',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.settings),
+                      label: 'Paramètres',
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(find.text('Verset'), findsOneWidget);
+      expect(find.text('Parcours'), findsOneWidget);
+      expect(find.text('Favoris'), findsOneWidget);
+      expect(find.text('Paramètres'), findsOneWidget);
+      expect(find.byType(BottomNavigationBar), findsOneWidget);
+
+      // Tap sur Paramètres (4ème onglet)
+      await tester.tap(find.text('Paramètres'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tab 3'), findsOneWidget);
+    });
+
+    testWidgets('ExpansionTile for monthly grouping', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            appBar: AppBar(title: const Text('Historique')),
+            body: ListView(
+              children: [
+                Card(
+                  child: ExpansionTile(
+                    title: const Text('Avril 2026 (3)'),
+                    initiallyExpanded: true,
+                    children: [
+                      ListTile(title: const Text('2026-04-14')),
+                      ListTile(title: const Text('2026-04-12')),
+                      ListTile(title: const Text('2026-04-10')),
+                    ],
+                  ),
+                ),
+                Card(
+                  child: ExpansionTile(
+                    title: const Text('Mars 2026 (1)'),
+                    children: [ListTile(title: const Text('2026-03-20'))],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(ExpansionTile), findsNWidgets(2));
+      expect(find.text('Avril 2026 (3)'), findsOneWidget);
+      expect(find.text('Mars 2026 (1)'), findsOneWidget);
+      // Le premier est expanded
+      expect(find.text('2026-04-14'), findsOneWidget);
+    });
   });
 }

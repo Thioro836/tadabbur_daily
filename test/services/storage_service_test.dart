@@ -63,5 +63,76 @@ void main() {
       // and would work with the right structure
       expect(storageService.calculateStreak([]), 0);
     });
+
+    // ---- Nouvelles méthodes v6 ----
+
+    test('StorageService has exportData method', () {
+      expect(storageService.exportData, isNotNull);
+    });
+
+    test('StorageService has deleteEntriesOlderThan method', () {
+      expect(storageService.deleteEntriesOlderThan, isNotNull);
+    });
+
+    test('StorageService has deleteAllData method', () {
+      expect(storageService.deleteAllData, isNotNull);
+    });
+
+    test('StorageService has getStorageStats method', () {
+      expect(storageService.getStorageStats, isNotNull);
+    });
+
+    test('StorageService has deleteFavorite method', () {
+      expect(storageService.deleteFavorite, isNotNull);
+    });
+
+    test('StorageService has groupEntriesByMonth method', () {
+      expect(storageService.groupEntriesByMonth, isNotNull);
+    });
+
+    test(
+      'StorageService groupEntriesByMonth with empty list returns empty map',
+      () {
+        final result = storageService.groupEntriesByMonth([]);
+        expect(result, isEmpty);
+      },
+    );
+
+    test('StorageService groupEntriesByMonth groups correctly', () {
+      final entries = [
+        {'date': '2026-04-10', 'reflection': 'Test 1'},
+        {'date': '2026-04-12', 'reflection': 'Test 2'},
+        {'date': '2026-03-05', 'reflection': 'Test 3'},
+      ];
+      final result = storageService.groupEntriesByMonth(entries);
+
+      expect(result.keys.length, 2);
+      expect(result.containsKey('2026-04'), true);
+      expect(result.containsKey('2026-03'), true);
+      expect(result['2026-04']!.length, 2);
+      expect(result['2026-03']!.length, 1);
+    });
+
+    test('StorageService groupEntriesByMonth sorts months descending', () {
+      final entries = [
+        {'date': '2026-01-01', 'reflection': 'Jan'},
+        {'date': '2026-04-01', 'reflection': 'Apr'},
+        {'date': '2026-02-01', 'reflection': 'Feb'},
+      ];
+      final result = storageService.groupEntriesByMonth(entries);
+      final keys = result.keys.toList();
+
+      expect(keys[0], '2026-04'); // Plus récent en premier
+      expect(keys[1], '2026-02');
+      expect(keys[2], '2026-01');
+    });
+
+    test('StorageService has saveDailyVerse method', () {
+      expect(storageService.saveDailyVerse, isNotNull);
+    });
+
+    test('StorageService has getDailyVerse method', () {
+      expect(storageService.getDailyVerse, isNotNull);
+    });
   });
 }
