@@ -13,7 +13,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await NotificationService.init();
-  await NotificationService.scheduleDailyReminder(hour: 8, minute: 0);
+
+  // Vérifier si les notifications sont activées avant de programmer
+  final notificationsEnabled = await StorageService().getNotificationStatus();
+  if (notificationsEnabled) {
+    await NotificationService.scheduleDailyReminder(hour: 8, minute: 0);
+  }
 
   // Précharger la police Amiri pour éviter les carrés
   await GoogleFonts.pendingFonts([GoogleFonts.amiri()]);
