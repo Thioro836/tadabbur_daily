@@ -139,6 +139,14 @@ class StorageService {
     return null; // Verset périmé, il faut en charger un nouveau
   }
 
+  // Récupérer le verset du jour sans tenir compte de la langue (pour préserver lors du changement de langue)
+  Future<Map<String, dynamic>?> getDailyVerseAnyLanguage() async {
+    final box = await _getBox();
+    final data = box.get('daily_verse');
+    if (data == null) return null;
+    return Map<String, dynamic>.from(data);
+  }
+
   // Exporter les données en JSON (backup)
   Future<String> exportData() async {
     final box = await _getBox();

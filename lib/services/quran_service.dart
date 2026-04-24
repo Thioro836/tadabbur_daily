@@ -323,4 +323,12 @@ class QuranService {
     final int verseNumber = _getRandomVerseNumber();
     return fetchVerseByNumber(verseNumber, language: language);
   }
+
+  // Récupère un verset spécifique par son numéro global (pour mettre à jour la traduction)
+  Future<Verse> fetchSpecificVerse(
+    int globalVerseNumber, {
+    String language = 'fr',
+  }) async {
+    return fetchVerseByNumber(globalVerseNumber, language: language);
+  }
 }

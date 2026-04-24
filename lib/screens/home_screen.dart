@@ -4,10 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tadabbur_daily/models/verse.dart';
 import 'package:tadabbur_daily/services/quran_service.dart';
 import 'package:tadabbur_daily/screens/journal_screen.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
+import 'package:tadabbur_daily/main.dart';
+import 'package:tadabbur_daily/services/language_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,20 +63,44 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Charge le verset du jour depuis le cache, ou un nouveau si périmé
   Future<Verse> _loadDailyVerse(String lang) async {
-    final saved = await StorageService().getDailyVerse();
-    if (saved != null && saved['language'] == lang) {
-      return Verse(
-        arabicText: saved['arabicText'],
-        translation: saved['translation'],
-        surahNumber: saved['surahNumber'],
-        surahNameArabic: saved['surahNameArabic'],
-        surahNameEnglish: saved['surahNameEnglish'],
-        verseNumber: saved['verseNumber'],
-        globalVerseNumber: saved['globalVerseNumber'],
-        audioUrl: saved['audioUrl'],
+    // Vérifier d'abord si on a un verset pour aujourd'hui (indépendamment de la langue)
+    final savedAny = await StorageService().getDailyVerseAnyLanguage();
+    final today = DateTime.now().toIso8601String().split('T')[0];
+
+    if (savedAny != null && savedAny['date'] == today) {
+      // On a déjà un verset pour aujourd'hui, on le garde mais on met à jour la traduction
+      final verse = Verse(
+        arabicText: savedAny['arabicText'],
+        translation: savedAny['translation'],
+        surahNumber: savedAny['surahNumber'],
+        surahNameArabic: savedAny['surahNameArabic'],
+        surahNameEnglish: savedAny['surahNameEnglish'],
+        verseNumber: savedAny['verseNumber'],
+        globalVerseNumber: savedAny['globalVerseNumber'],
+        audioUrl: savedAny['audioUrl'],
       );
+      // Mettre à jour la traduction si la langue a changé
+      if (savedAny['language'] != lang) {
+        final translatedVerse = await _quranService.fetchSpecificVerse(
+          verse.globalVerseNumber,
+          language: lang,
+        );
+        await StorageService().saveDailyVerse({
+          'arabicText': translatedVerse.arabicText,
+          'translation': translatedVerse.translation,
+          'surahNumber': translatedVerse.surahNumber,
+          'surahNameArabic': translatedVerse.surahNameArabic,
+          'surahNameEnglish': translatedVerse.surahNameEnglish,
+          'verseNumber': translatedVerse.verseNumber,
+          'globalVerseNumber': translatedVerse.globalVerseNumber,
+          'audioUrl': translatedVerse.audioUrl,
+          'language': lang,
+        });
+        return translatedVerse;
+      }
+      return verse;
     }
-    // Pas de verset aujourd'hui ou langue différente → en chercher un nouveau
+    // Pas de verset aujourd'hui → en chercher un nouveau
     final verse = await _quranService.fetchRandomVerse(language: lang);
     await StorageService().saveDailyVerse({
       'arabicText': verse.arabicText,
@@ -102,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Afficher le sélecteur de sourate
-  void _showSurahPicker() {
+  void _showSurahPicker(LanguageProvider? localizations) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -121,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Padding(
                   padding: EdgeInsets.all(16),
                   child: Text(
-                    'Choisir une sourate',
+                    localizations?.get('chooseSurah') ?? 'Choisir une sourate',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -141,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         title: Text(QuranService.surahNamesArabic[index]),
                         subtitle: Text(
-                          '${QuranService.versesPerSurah[index]} versets',
+                          '${QuranService.versesPerSurah[index]} ${localizations?.get('verses') ?? 'versets'}',
                         ),
                         onTap: () {
                           Navigator.pop(context);
@@ -159,16 +186,149 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Charger un verset d'une sourate spécifique
+  // Charger un verset d'une sourate spécifique (limité à 1 par jour)
   Future<void> _loadVerseFromSurah(int surahNumber) async {
     await _audioPlayer.stop();
     _currentAudioUrl = null;
-    setState(() {
-      _verseFuture = _quranService.fetchVerseFromSurah(
-        surahNumber: surahNumber,
-        language: _language,
-      );
+
+    // Charger le premier verset de la sourate
+    final verse = await _quranService.fetchVerseFromSurah(
+      surahNumber: surahNumber,
+      language: _language,
+    );
+
+    // Sauvegarder comme verset du jour (limite à 1 par jour)
+    await StorageService().saveDailyVerse({
+      'arabicText': verse.arabicText,
+      'translation': verse.translation,
+      'surahNumber': verse.surahNumber,
+      'surahNameArabic': verse.surahNameArabic,
+      'surahNameEnglish': verse.surahNameEnglish,
+      'verseNumber': verse.verseNumber,
+      'globalVerseNumber': verse.globalVerseNumber,
+      'audioUrl': verse.audioUrl,
+      'language': _language,
     });
+
+    setState(() {
+      _verseFuture = Future.value(verse);
+    });
+  }
+
+  // Widget skeleton pour le chargement
+  Widget _buildShimmerSkeleton(LanguageProvider? localizations) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Column(
+        children: [
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+            ),
+            margin: EdgeInsets.symmetric(vertical: 24, horizontal: 0),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Reference skeleton
+                  Container(
+                    height: 20,
+                    width: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  // Arabic text skeleton
+                  Container(
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Container(
+                    height: 24,
+                    width: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 32),
+                  // Translation skeleton
+                  Container(
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Container(
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Container(
+                    height: 16,
+                    width: 180,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Buttons skeleton
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: 16),
+              Container(
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: 16),
+              Container(
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _toggleAudio(String? audioUrl) async {
@@ -187,15 +347,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = TadabburApp.of(context);
+    final localizations = appState?.languageProvider;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('verset du jour'),
+        title: Text(localizations?.get('homeTitle') ?? 'verset du jour'),
         actions: [
           TextButton(
             onPressed: () async {
-              await StorageService().saveLanguage(
-                _language == 'fr' ? 'en' : 'fr',
-              );
+              final newLanguage = _language == 'fr' ? 'en' : 'fr';
+              await appState?.changeLanguage(newLanguage);
+              _language = newLanguage;
               _loadVerse();
             },
             child: Text(
@@ -208,13 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {
-              _refreshVerse();
-            },
-            icon: Icon(Icons.refresh, color: Colors.white),
-          ),
-          IconButton(
-            onPressed: () => _showSurahPicker(),
+            onPressed: () => _showSurahPicker(localizations),
             icon: Icon(Icons.search, color: Colors.white),
           ),
         ],
@@ -226,16 +383,16 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (_verseFuture == null)
-                CircularProgressIndicator()
+                _buildShimmerSkeleton(localizations)
               else
                 FutureBuilder<Verse>(
                   future: _verseFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator();
+                      return _buildShimmerSkeleton(localizations);
                     }
                     if (snapshot.hasError) {
-                      return Text('Erreur !');
+                      return Text(localizations?.get('error') ?? 'Erreur !');
                     }
                     final verse = snapshot.data!;
                     return TweenAnimationBuilder<double>(
@@ -378,7 +535,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ).showSnackBar(
                                             SnackBar(
                                               content: Text(
-                                                'Verset ajouté aux favoris ⭐',
+                                                localizations?.get(
+                                                      'verseAddedToFavorites',
+                                                    ) ??
+                                                    'Verset ajouté aux favoris ⭐',
                                               ),
                                             ),
                                           );
@@ -394,7 +554,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         onPressed: () async {
                                           final text =
-                                              '${verse.arabicText}\n\n${verse.translation}\n\n— ${verse.surahNameEnglish} (${verse.surahNumber}:${verse.verseNumber})';
+                                              '🕌 *Tadabbur Daily*\n\n'
+                                              '${verse.arabicText}\n\n'
+                                              '━━━━━━━━━━━━━━━━━━━━\n'
+                                              '${verse.translation}\n\n'
+                                              '— ${verse.surahNameEnglish} (${verse.surahNumber}:${verse.verseNumber})\n\n'
+                                              '✨';
 
                                           // Sur mobile → menu de partage natif
                                           // Sur desktop/web → copie dans le presse-papier
@@ -415,7 +580,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                             ).showSnackBar(
                                               SnackBar(
                                                 content: Text(
-                                                  'Verset copié ! 📋',
+                                                  localizations?.get(
+                                                        'verseCopied',
+                                                      ) ??
+                                                      'Verset copié ! 📋',
                                                 ),
                                               ),
                                             );
@@ -454,7 +622,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            child: Text('Méditer'),
+                            child: Text(
+                              localizations?.get('journal') ?? 'Méditer',
+                            ),
                           ),
                         ],
                       ),

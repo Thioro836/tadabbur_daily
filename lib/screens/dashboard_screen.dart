@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:tadabbur_daily/models/verse.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
 import 'package:tadabbur_daily/screens/journal_screen.dart';
+import 'package:tadabbur_daily/main.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -22,7 +23,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   // Graphique des 7 derniers jours
-  Widget _buildWeeklyChart(List<Map<String, dynamic>> historique) {
+  Widget _buildWeeklyChart(
+    List<Map<String, dynamic>> historique,
+    var localizations,
+  ) {
     final now = DateTime.now();
     final days = <String>['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
@@ -45,7 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '📈 7 derniers jours',
+              localizations?.get('last7Days') ?? '📈 7 derniers jours',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 12),
@@ -130,8 +134,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = TadabburApp.of(context);
+    final localizations = appState?.languageProvider;
+
     return Scaffold(
-      appBar: AppBar(title: Text('Mon Parcours')),
+      appBar: AppBar(
+        title: Text(localizations?.get('dashboardTitle') ?? 'Mon Parcours'),
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -145,13 +154,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     return CircularProgressIndicator();
                   }
                   if (snapshot.hasError) {
-                    return Text('Erreur !');
+                    return Text(localizations?.get('error') ?? 'Erreur !');
                   }
                   final historique = snapshot.data!;
                   if (historique.isEmpty) {
                     return Center(
                       child: Text(
-                        'Aucune méditation pour le moment.\nCommencez par méditer un verset ! 🌙',
+                        localizations?.get('noMeditationYet') ??
+                            'Aucune méditation pour le moment.\nCommencez par méditer un verset ! 🌙',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 16),
                       ),
@@ -185,7 +195,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       SizedBox(height: 20),
 
                       // Graphique des 7 derniers jours
-                      _buildWeeklyChart(historique),
+                      _buildWeeklyChart(historique, localizations),
                       SizedBox(height: 20),
 
                       // Historique groupé par mois

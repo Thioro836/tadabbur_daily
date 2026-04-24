@@ -33,12 +33,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Exporter les données
   Future<void> _exportData() async {
+    final appState = TadabburApp.of(context);
+    final localizations = appState?.languageProvider;
+
     final json = await _storageService.exportData();
     await Clipboard.setData(ClipboardData(text: json));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Données exportées dans le presse-papier !'),
+          content: Text(
+            localizations?.get('exportedToClipboard') ??
+                '✅ Données exportées dans le presse-papier !',
+          ),
           backgroundColor: Colors.teal,
         ),
       );
@@ -47,22 +53,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Nettoyer les anciennes données
   Future<void> _cleanOldData() async {
+    final appState = TadabburApp.of(context);
+    final localizations = appState?.languageProvider;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('🧹 Nettoyer les données'),
+        title: Text(
+          localizations?.get('cleanDataConfirm') ?? '🧹 Nettoyer les données',
+        ),
         content: Text(
-          'Supprimer les méditations de plus de 90 jours ?\n\n'
-          'Les favoris ne seront pas affectés.',
+          localizations?.get('cleanDataMessage') ??
+              'Supprimer les méditations de plus de 90 jours ?\n\n'
+                  'Les favoris ne seront pas affectés.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler'),
+            child: Text(localizations?.get('cancel') ?? 'Annuler'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Supprimer', style: TextStyle(color: Colors.red)),
+            child: Text(
+              localizations?.get('delete') ?? 'Supprimer',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -73,7 +88,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🗑️ $count entrée(s) supprimée(s)'),
+            content: Text(
+              localizations?.translate(
+                    'entriesDeleted',
+                    params: {'count': count.toString()},
+                  ) ??
+                  '🗑️ $count entrée(s) supprimée(s)',
+            ),
             backgroundColor: Colors.teal,
           ),
         );
@@ -83,22 +104,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Supprimer toutes les données
   Future<void> _deleteAllData() async {
+    final appState = TadabburApp.of(context);
+    final localizations = appState?.languageProvider;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('⚠️ Tout supprimer'),
+        title: Text(
+          localizations?.get('deleteAllConfirm') ?? '⚠️ Tout supprimer',
+        ),
         content: Text(
-          'Cette action est irréversible !\n\n'
-          'Toutes vos méditations, favoris et paramètres seront supprimés.',
+          localizations?.get('deleteAllMessage') ??
+              'Cette action est irréversible !\n\n'
+                  'Toutes vos méditations, favoris et paramètres seront supprimés.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Annuler'),
+            child: Text(localizations?.get('cancel') ?? 'Annuler'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Tout supprimer', style: TextStyle(color: Colors.red)),
+            child: Text(
+              localizations?.get('deleteAll') ?? 'Tout supprimer',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
@@ -109,7 +139,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('🗑️ Toutes les données ont été supprimées'),
+            content: Text(
+              localizations?.get('allDataDeleted') ??
+                  '🗑️ Toutes les données ont été supprimées',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -119,14 +152,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = TadabburApp.of(context);
+    final localizations = appState?.languageProvider;
+
     return Scaffold(
-      appBar: AppBar(title: Text('Paramètres')),
+      appBar: AppBar(
+        title: Text(localizations?.get('settingsTitle') ?? 'Paramètres'),
+      ),
       body: ListView(
         padding: EdgeInsets.all(16),
         children: [
           // Section Préférences
           Text(
-            '⚙️ Préférences',
+            localizations?.get('preferences') ?? '⚙️ Préférences',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
@@ -134,8 +172,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 SwitchListTile(
-                  title: Text('🔔 Notifications'),
-                  subtitle: Text('Rappel quotidien à 8h'),
+                  title: Text(
+                    localizations?.get('notifications') ?? '🔔 Notifications',
+                  ),
+                  subtitle: Text(
+                    localizations?.get('dailyReminder') ??
+                        'Rappel quotidien à 8h',
+                  ),
                   value: _notificationsEnabled,
                   onChanged: (value) async {
                     await _storageService.saveNotification(value);
@@ -151,8 +194,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 Divider(height: 1),
                 SwitchListTile(
-                  title: Text('🌙 Mode sombre'),
-                  subtitle: Text('Thème adapté pour la nuit'),
+                  title: Text(
+                    localizations?.get('darkMode') ?? '🌙 Mode sombre',
+                  ),
+                  subtitle: Text(
+                    localizations?.get('darkModeDesc') ??
+                        'Thème adapté pour la nuit',
+                  ),
                   value: _isDarkMode,
                   onChanged: (value) async {
                     await _storageService.saveDarkMode(value);
@@ -170,7 +218,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Section Gestion des données
           Text(
-            '🗂️ Gestion des données',
+            localizations?.get('dataManagement') ?? '🗂️ Gestion des données',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
@@ -179,22 +227,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 ListTile(
                   leading: Icon(Icons.download, color: Colors.teal),
-                  title: Text('Exporter mes données'),
-                  subtitle: Text('Copie JSON dans le presse-papier'),
+                  title: Text(
+                    localizations?.get('exportData') ?? 'Exporter mes données',
+                  ),
+                  subtitle: Text(
+                    localizations?.get('exportDataDesc') ??
+                        'Copie JSON dans le presse-papier',
+                  ),
                   onTap: _exportData,
                 ),
                 Divider(height: 1),
                 ListTile(
                   leading: Icon(Icons.cleaning_services, color: Colors.orange),
-                  title: Text('Nettoyer (+90 jours)'),
-                  subtitle: Text('Supprime les anciennes méditations'),
+                  title: Text(
+                    localizations?.get('cleanData') ?? 'Nettoyer (+90 jours)',
+                  ),
+                  subtitle: Text(
+                    localizations?.get('cleanDataDesc') ??
+                        'Supprime les anciennes méditations',
+                  ),
                   onTap: _cleanOldData,
                 ),
                 Divider(height: 1),
                 ListTile(
                   leading: Icon(Icons.delete_forever, color: Colors.red),
-                  title: Text('Tout supprimer'),
-                  subtitle: Text('Efface toutes les données'),
+                  title: Text(
+                    localizations?.get('deleteAll') ?? 'Tout supprimer',
+                  ),
+                  subtitle: Text(
+                    localizations?.get('deleteAllDesc') ??
+                        'Efface toutes les données',
+                  ),
                   onTap: _deleteAllData,
                 ),
               ],
@@ -205,7 +268,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // Section À propos
           Text(
-            '📱 À propos',
+            localizations?.get('about') ?? '📱 À propos',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           SizedBox(height: 8),
@@ -217,8 +280,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Icons.info_outline,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  title: Text('Tadabbur Daily'),
-                  subtitle: Text('Version 1.0.0'),
+                  title: Text(
+                    localizations?.get('appName') ?? 'Tadabbur Daily',
+                  ),
+                  subtitle: Text(
+                    localizations?.get('version') ?? 'Version 1.0.0',
+                  ),
                 ),
                 Divider(height: 1),
                 ListTile(
@@ -226,8 +293,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Icons.auto_stories,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  title: Text('Source des versets'),
-                  subtitle: Text('API Al-Quran Cloud'),
+                  title: Text(
+                    localizations?.get('verseSource') ?? 'Source des versets',
+                  ),
+                  subtitle: Text(
+                    localizations?.get('verseSourceAPI') ??
+                        'API Al-Quran Cloud',
+                  ),
                 ),
               ],
             ),

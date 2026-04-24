@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tadabbur_daily/models/verse.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
+import 'package:tadabbur_daily/main.dart';
 
 class JournalScreen extends StatefulWidget {
   final Verse verse;
@@ -47,8 +48,13 @@ class _JournalScreenState extends State<JournalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = TadabburApp.of(context);
+    final localizations = appState?.languageProvider;
+
     return Scaffold(
-      appBar: AppBar(title: Text('Méditation')),
+      appBar: AppBar(
+        title: Text(localizations?.get('journalTitle') ?? 'Méditation'),
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -73,7 +79,9 @@ class _JournalScreenState extends State<JournalScreen> {
                 controller: _reflectionController,
                 maxLines: 4,
                 decoration: InputDecoration(
-                  labelText: 'Ce qui m\'a marqué',
+                  labelText:
+                      localizations?.get('whatStruckMe') ??
+                      'Ce qui m\'a marqué',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -82,7 +90,9 @@ class _JournalScreenState extends State<JournalScreen> {
                 controller: _identificationController,
                 maxLines: 4,
                 decoration: InputDecoration(
-                  labelText: 'Comment je m\'y identifie',
+                  labelText:
+                      localizations?.get('howIdentify') ??
+                      'Comment je m\'y identifie',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -91,7 +101,8 @@ class _JournalScreenState extends State<JournalScreen> {
                 controller: _invocationController,
                 maxLines: 4,
                 decoration: InputDecoration(
-                  labelText: 'Mon du\'a(invocation)',
+                  labelText:
+                      localizations?.get('myDuaa') ?? 'Mon du\'a(invocation)',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -110,11 +121,16 @@ class _JournalScreenState extends State<JournalScreen> {
                   );
                   //afficher un message de confirmation après la sauvegarde
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Méditation sauvegardée ✅')),
+                    SnackBar(
+                      content: Text(
+                        localizations?.get('saved') ??
+                            'Méditation sauvegardée ✅',
+                      ),
+                    ),
                   );
                   Navigator.pop(context);
                 },
-                child: Text('Sauvegarder'),
+                child: Text(localizations?.get('save') ?? 'Sauvegarder'),
               ),
             ],
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
+import 'package:tadabbur_daily/main.dart';
 
 class FavoriteScreen extends StatefulWidget {
   const FavoriteScreen({super.key});
@@ -21,8 +22,13 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = TadabburApp.of(context);
+    final localizations = appState?.languageProvider;
+
     return Scaffold(
-      appBar: AppBar(title: Text('Mes Favoris')),
+      appBar: AppBar(
+        title: Text(localizations?.get('favoritesTitle') ?? 'Mes Favoris'),
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -36,13 +42,14 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                     return CircularProgressIndicator();
                   }
                   if (snapshot.hasError) {
-                    return Text('Erreur !');
+                    return Text(localizations?.get('error') ?? 'Erreur !');
                   }
                   final historique = snapshot.data!;
                   if (historique.isEmpty) {
                     return Center(
                       child: Text(
-                        'Aucun favori pour le moment ⭐',
+                        localizations?.get('noFavorites') ??
+                            'Aucun favori pour le moment ⭐',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 16),
                       ),

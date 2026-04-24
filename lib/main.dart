@@ -7,6 +7,7 @@ import 'package:tadabbur_daily/screens/favorites_screen.dart';
 import 'package:tadabbur_daily/screens/settings_screen.dart';
 import 'package:tadabbur_daily/services/notification_service.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
+import 'package:tadabbur_daily/services/language_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,18 +35,39 @@ class TadabburApp extends StatefulWidget {
 
 class _TadabburAppState extends State<TadabburApp> {
   bool _isDarkMode = false;
+  late LanguageProvider _languageProvider;
 
   @override
   void initState() {
     super.initState();
+    _languageProvider = LanguageProvider();
+    _languageProvider.addListener(_onLanguageChanged);
     _loadTheme();
+    _initializeLanguage();
+  }
+
+  Future<void> _initializeLanguage() async {
+    await _languageProvider.initializeLanguage();
+  }
+
+  void _onLanguageChanged() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _languageProvider.removeListener(_onLanguageChanged);
+    _languageProvider.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTheme() async {
     final isDark = await StorageService().getDarkMode();
-    setState(() {
-      _isDarkMode = isDark;
-    });
+    if (mounted) {
+      setState(() {
+        _isDarkMode = isDark;
+      });
+    }
   }
 
   void toggleTheme(bool isDark) {
@@ -53,6 +75,12 @@ class _TadabburAppState extends State<TadabburApp> {
       _isDarkMode = isDark;
     });
   }
+
+  Future<void> changeLanguage(String language) async {
+    await _languageProvider.setLanguage(language);
+  }
+
+  LanguageProvider get languageProvider => _languageProvider;
 
   // ---- THÈME CLAIR ----
   ThemeData get _lightTheme => ThemeData(
@@ -162,6 +190,9 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = TadabburApp.of(context);
+    final localizations = appState?.languageProvider;
+
     return Scaffold(
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
@@ -173,15 +204,21 @@ class _MainScreenState extends State<MainScreen> {
           });
         },
         items: [
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Verset'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu_book),
+            label: localizations?.get('home') ?? 'Accueil',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
-            label: 'Parcours',
+            label: localizations?.get('dashboard') ?? 'Tableau de bord',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favoris'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: localizations?.get('favorites') ?? 'Favoris',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings),
-            label: 'Paramètres',
+            label: localizations?.get('settings') ?? 'Paramètres',
           ),
         ],
       ),
