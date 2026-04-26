@@ -109,8 +109,8 @@ class NotificationService {
         ),
         iOS: DarwinNotificationDetails(),
       ),
-      // FIX 4 : Utiliser exactAllowWhileIdle pour plus de fiabilité
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
