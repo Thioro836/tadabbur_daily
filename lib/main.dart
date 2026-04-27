@@ -8,20 +8,31 @@ import 'package:tadabbur_daily/screens/settings_screen.dart';
 import 'package:tadabbur_daily/services/notification_service.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
 import 'package:tadabbur_daily/services/language_provider.dart';
+import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  await NotificationService.init();
 
-  // Vérifier si les notifications sont activées avant de programmer
-  final notificationsEnabled = await StorageService().getNotificationStatus();
-  if (notificationsEnabled) {
-    await NotificationService.scheduleDailyReminder(hour: 8, minute: 0);
+  // Initialiser Hive en premier
+  await Hive.initFlutter();
+
+  // Initialiser les notifications
+  try {
+    await NotificationService.init();
+  } catch (e) {
+    debugPrint('Erreur init notifications: $e');
   }
 
+ 
   // Précharger la police Amiri pour éviter les carrés
-  await GoogleFonts.pendingFonts([GoogleFonts.amiri()]);
+  try {
+    await GoogleFonts.pendingFonts([
+      GoogleFonts.amiri(),
+    ]).timeout(Duration(seconds: 3));
+  } catch (e) {
+    // Continuer sans la police si pas de connexion
+    debugPrint('Erreur police: $e');
+  }
 
   runApp(const TadabburApp());
 }
@@ -192,6 +203,28 @@ class _MainScreenState extends State<MainScreen> {
     FavoriteScreen(),
     SettingsScreen(),
   ];
+  @override
+  void initState() {
+    super.initState();
+    // L'UI est prête, on gère les notifications en arrière-plan
+    _setupNotifications();
+  }
+  Future<void> _setupNotifications() async {
+    try {
+      // 1. On demande la permission de base (sans l'alarme exacte)
+      await NotificationService.requestPermissions();
+
+      // 2. On vérifie les préférences et on programme
+      final storage = StorageService();
+      final notificationsEnabled = await storage.getNotificationStatus();
+      
+      if (notificationsEnabled) {
+        await NotificationService.scheduleDailyReminder(hour: 8, minute: 0);
+      }
+    } catch (e) {
+      debugPrint('Erreur lors du setup des notifications: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

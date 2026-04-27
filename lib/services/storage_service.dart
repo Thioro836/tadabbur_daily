@@ -4,9 +4,16 @@ import 'package:hive/hive.dart';
 class StorageService {
   static const String _boxName = 'journal_entries';
 
-  // Ouvrir la boîte
+  // Mettre en cache la boîte pour éviter de l'ouvrir plusieurs fois
+  static Box? _box;
+
+  // Ouvrir la boîte (avec cache)
   Future<Box> _getBox() async {
-    return await Hive.openBox(_boxName);
+    if (_box != null && _box!.isOpen) {
+      return _box!;
+    }
+    _box = await Hive.openBox(_boxName);
+    return _box!;
   }
 
   // Sauvegarder une entrée
