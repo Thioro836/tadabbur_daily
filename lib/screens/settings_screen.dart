@@ -15,6 +15,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final StorageService _storageService = StorageService();
   bool _notificationsEnabled = true;
   bool _isDarkMode = false;
+  TimeOfDay _notificationTime = TimeOfDay(hour: 8, minute: 0);
 
   @override
   void initState() {
@@ -25,10 +26,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSettings() async {
     final notif = await _storageService.getNotificationStatus();
     final dark = await _storageService.getDarkMode();
+    final time = await _storageService.getNotificationTime();
     setState(() {
       _notificationsEnabled = notif;
       _isDarkMode = dark;
+      _notificationTime = time;
     });
+  }
+
+  // Sélectionner l'heure de notification
+  Future<void> _pickNotificationTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _notificationTime,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      await _storageService.saveNotificationTime(picked);
+      setState(() {
+        _notificationTime = picked;
+      });
+
+      // Reprogrammer la notification avec la nouvelle heure
+      if (_notificationsEnabled) {
+        await NotificationService.scheduleDailyReminder(
+          hour: picked.hour,
+          minute: picked.minute,
+        );
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⏰ Notification programmée à ${picked.format(context)}'),
+            backgroundColor: Colors.teal,
+          ),
+        );
+      }
+    }
   }
 
   // Exporter les données
@@ -176,14 +217,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     localizations?.get('notifications') ?? '🔔 Notifications',
                   ),
                   subtitle: Text(
-                    localizations?.get('dailyReminder') ??
-                        'Rappel quotidien à 8h',
+                    'Rappel quotidien à ${_notificationTime.format(context)}',
                   ),
                   value: _notificationsEnabled,
                   onChanged: (value) async {
                     await _storageService.saveNotification(value);
                     if (value) {
-                      await NotificationService.scheduleDailyReminder();
+                      await NotificationService.scheduleDailyReminder(
+                        hour: _notificationTime.hour,
+                        minute: _notificationTime.minute,
+                      );
                     } else {
                       await NotificationService.cancelAll();
                     }
@@ -192,6 +235,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     });
                   },
                 ),
+                // Sélecteur d'heure (visible seulement si notifs activées)
+                if (_notificationsEnabled) ...[
+                  Divider(height: 1),
+                  ListTile(
+                    leading: Icon(Icons.access_time, color: Colors.teal),
+                    title: Text('Heure du rappel'),
+                    subtitle: Text(_notificationTime.format(context)),
+                    onTap: _pickNotificationTime,
+                    trailing: Icon(Icons.chevron_right),
+                  ),
+                ],
                 Divider(height: 1),
                 SwitchListTile(
                   title: Text(
@@ -284,7 +338,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     localizations?.get('appName') ?? 'Tadabbur Daily',
                   ),
                   subtitle: Text(
-                    localizations?.get('version') ?? 'Version 1.0.0',
+                    localizations?.get('version') ?? 'Version 1.0.1',
                   ),
                 ),
                 Divider(height: 1),

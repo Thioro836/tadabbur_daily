@@ -16,21 +16,19 @@ void main() async {
   // Initialiser Hive en premier
   await Hive.initFlutter();
 
-  // Initialiser les notifications
+  // Initialiser les notifications avec try/catch
   try {
     await NotificationService.init();
   } catch (e) {
     debugPrint('Erreur init notifications: $e');
   }
 
- 
-  // Précharger la police Amiri pour éviter les carrés
+  // Précharger la police Amiri avec timeout
   try {
     await GoogleFonts.pendingFonts([
       GoogleFonts.amiri(),
     ]).timeout(Duration(seconds: 3));
   } catch (e) {
-    // Continuer sans la police si pas de connexion
     debugPrint('Erreur police: $e');
   }
 
@@ -40,7 +38,6 @@ void main() async {
 class TadabburApp extends StatefulWidget {
   const TadabburApp({super.key});
 
-  // Méthode statique pour accéder au State depuis n'importe où
   static _TadabburAppState? of(BuildContext context) {
     return context.findAncestorStateOfType<_TadabburAppState>();
   }
@@ -98,7 +95,6 @@ class _TadabburAppState extends State<TadabburApp> {
 
   LanguageProvider get languageProvider => _languageProvider;
 
-  // ---- THÈME CLAIR ----
   ThemeData get _lightTheme => ThemeData(
     colorScheme: ColorScheme(
       brightness: Brightness.light,
@@ -137,7 +133,6 @@ class _TadabburAppState extends State<TadabburApp> {
     ),
   );
 
-  // ---- THÈME SOMBRE ----
   ThemeData get _darkTheme => ThemeData(
     colorScheme: ColorScheme(
       brightness: Brightness.dark,
@@ -203,26 +198,30 @@ class _MainScreenState extends State<MainScreen> {
     FavoriteScreen(),
     SettingsScreen(),
   ];
+
   @override
   void initState() {
     super.initState();
-    // L'UI est prête, on gère les notifications en arrière-plan
     _setupNotifications();
   }
+
   Future<void> _setupNotifications() async {
     try {
-      // 1. On demande la permission de base (sans l'alarme exacte)
       await NotificationService.requestPermissions();
 
-      // 2. On vérifie les préférences et on programme
       final storage = StorageService();
       final notificationsEnabled = await storage.getNotificationStatus();
       
       if (notificationsEnabled) {
-        await NotificationService.scheduleDailyReminder(hour: 8, minute: 0);
+        // Récupérer l'heure sauvegardée par l'utilisateur
+        final time = await storage.getNotificationTime();
+        await NotificationService.scheduleDailyReminder(
+          hour: time.hour,
+          minute: time.minute,
+        );
       }
     } catch (e) {
-      debugPrint('Erreur lors du setup des notifications: $e');
+      debugPrint('Erreur setup notifications: $e');
     }
   }
 

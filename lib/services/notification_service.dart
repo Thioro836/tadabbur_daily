@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -25,102 +26,85 @@ class NotificationService {
     return _reminderMessages[random.nextInt(_reminderMessages.length)];
   }
 
-  /// 1. INITIALISATION SILENCIEUSE
-  /// À appeler dans le main() - Ne déclenche aucune pop-up
   static Future<void> init() async {
-    tz_data.initializeTimeZones();
-
-    final String timeZoneName = await _getDeviceTimeZone();
-    tz.setLocalLocation(tz.getLocation(timeZoneName));
-
-    const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
-    );
-
-    // FIX : Tout à 'false' pour iOS afin d'éviter l'écran noir au démarrage
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
-
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-
-    // FIX : On remet le paramètre nommé "settings:" (comme tu l'avais très bien fait au début !)
-    await _plugin.initialize(settings: initSettings);
-  }
-
-  /// 2. DEMANDE DE PERMISSIONS
-  /// À appeler une fois l'UI chargée (ex: dans initState de l'écran d'accueil)
-  static Future<void> requestPermissions() async {
-    // Demander les permissions classiques sur Android 13+
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-
-    // Demander les permissions explicites sur iOS
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-    
-    // NOTE: Plus de demande pour les alarmes exactes (requestExactAlarmsPermission)
-  }
-
-  /// 3. DÉTECTION DU FUSEAU HORAIRE
-  static Future<String> _getDeviceTimeZone() async {
     try {
-      final now = DateTime.now();
-      final offset = now.timeZoneOffset;
+      tz_data.initializeTimeZones();
+
+      // Détecter le fuseau horaire de manière sécurisée
+      final offset = DateTime.now().timeZoneOffset;
       final hours = offset.inHours;
-      final minutes = offset.inMinutes.remainder(60).abs();
+      String timeZoneName = 'UTC';
+      if (hours == 1) timeZoneName = 'Europe/Paris';
+      if (hours == 2) timeZoneName = 'Europe/Paris'; // heure été
 
-      if (hours == 1 && minutes == 0) return 'Europe/Paris';
-      if (hours == 2 && minutes == 0) return 'Europe/Paris'; // heure été
-      if (hours == -5 && minutes == 0) return 'America/New_York';
+      try {
+        tz.setLocalLocation(tz.getLocation(timeZoneName));
+      } catch (e) {
+        tz.setLocalLocation(tz.UTC);
+      }
 
-      return 'UTC';
+      const androidSettings = AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+      );
+
+      const iosSettings = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+
+      const initSettings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      );
+
+      await _plugin.initialize(settings: initSettings);
+
+      // Demander les permissions sur Android 13+
+      try {
+        await _plugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.requestNotificationsPermission();
+      } catch (e) {
+        debugPrint('Permission notification error: $e');
+      }
     } catch (e) {
-      return 'UTC';
+      debugPrint('NotificationService init error: $e');
     }
   }
 
-  /// 4. PROGRAMMATION DU RAPPEL QUOTIDIEN
   static Future<void> scheduleDailyReminder({
     int hour = 8,
     int minute = 0,
   }) async {
+    try {
+      await _plugin.cancel(id: 0);
 
-    await _plugin.cancel(id: 0);
-
-    await _plugin.zonedSchedule(
-      id: 0, 
-      title: '🌙 Tadabbur Daily', 
-      body: _getRandomMessage(), 
-      scheduledDate: _nextInstanceOfTime(hour, minute), 
-      notificationDetails: const NotificationDetails( 
-        android: AndroidNotificationDetails(
-          'daily_reminder',
-          'Rappel quotidien',
-          channelDescription: 'Rappel quotidien pour méditer',
-          importance: Importance.high,
-          priority: Priority.high,
+      await _plugin.zonedSchedule(
+        id: 0,
+        title: '🌙 Tadabbur Daily',
+        body: _getRandomMessage(),
+        scheduledDate: _nextInstanceOfTime(hour, minute),
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'daily_reminder',
+            'Rappel quotidien',
+            channelDescription: 'Rappel quotidien pour méditer',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } catch (e) {
+      debugPrint('scheduleDailyReminder error: $e');
+    }
   }
-  /// 5. CALCUL DU PROCHAIN HORAIRE
+
   static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
@@ -138,7 +122,6 @@ class NotificationService {
     return scheduled;
   }
 
-  /// 6. ANNULATION DE TOUTES LES NOTIFICATIONS
   static Future<void> cancelAll() async {
     await _plugin.cancelAll();
   }

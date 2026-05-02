@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 class StorageService {
@@ -284,4 +285,19 @@ class StorageService {
     final box = await _getBox();
     await box.delete('fav_$globalVerseNumber');
   }
+  // Sauvegarder l'heure de notification
+Future<void> saveNotificationTime(TimeOfDay time) async {
+  final box = await Hive.openBox('settings');
+  await box.put('notification_hour', time.hour);
+  await box.put('notification_minute', time.minute);
+}
+ 
+// Récupérer l'heure de notification (8h00 par défaut)
+Future<TimeOfDay> getNotificationTime() async {
+  final box = await Hive.openBox('settings');
+  final hour = box.get('notification_hour', defaultValue: 8);
+  final minute = box.get('notification_minute', defaultValue: 0);
+  return TimeOfDay(hour: hour, minute: minute);
+}
+ 
 }
