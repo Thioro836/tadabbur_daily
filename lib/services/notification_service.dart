@@ -26,6 +26,7 @@ class NotificationService {
     return _reminderMessages[random.nextInt(_reminderMessages.length)];
   }
 
+ 
   static Future<void> init() async {
     try {
       tz_data.initializeTimeZones();
@@ -47,10 +48,11 @@ class NotificationService {
         '@mipmap/ic_launcher',
       );
 
+      // 🔴 MODIFICATION IMPORTANTE ICI : Tout mettre à false !
       const iosSettings = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
+        requestAlertPermission: false, 
+        requestBadgePermission: false,
+        requestSoundPermission: false,
       );
 
       const initSettings = InitializationSettings(
@@ -60,18 +62,36 @@ class NotificationService {
 
       await _plugin.initialize(settings: initSettings);
 
-      // Demander les permissions sur Android 13+
-      try {
-        await _plugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >()
-            ?.requestNotificationsPermission();
-      } catch (e) {
-        debugPrint('Permission notification error: $e');
-      }
+      // 🔴 SUPPRIME le bloc "Demander les permissions sur Android 13+" qui était ici.
+      // Il est maintenant géré par requestPermissions() !
+
     } catch (e) {
       debugPrint('NotificationService init error: $e');
+    }
+  }
+  static Future<void> requestPermissions() async {
+    // Demande pour Android 13+
+    try {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    } catch (e) {
+      debugPrint('Erreur demande permission Android: $e');
+    }
+
+    // Demande explicite pour iOS
+    try {
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+    } catch (e) {
+      debugPrint('Erreur demande permission iOS: $e');
     }
   }
 
