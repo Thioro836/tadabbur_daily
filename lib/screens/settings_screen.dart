@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tadabbur_daily/main.dart';
@@ -64,7 +66,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('⏰ Notification programmée à ${picked.format(context)}'),
+            content: Text(
+              '⏰ Notification programmée à ${picked.format(context)}',
+            ),
             backgroundColor: Colors.teal,
           ),
         );
@@ -245,6 +249,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: _pickNotificationTime,
                     trailing: Icon(Icons.chevron_right),
                   ),
+                  Divider(height: 1),
                 ],
                 Divider(height: 1),
                 SwitchListTile(
@@ -257,8 +262,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   value: _isDarkMode,
                   onChanged: (value) async {
+                    final appState = TadabburApp.of(context);
                     await _storageService.saveDarkMode(value);
-                    TadabburApp.of(context)?.toggleTheme(value);
+                    appState?.toggleTheme(value);
                     setState(() {
                       _isDarkMode = value;
                     });

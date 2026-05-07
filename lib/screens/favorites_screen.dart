@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
@@ -70,12 +72,47 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    '${entry['surahNameEnglish']} (${entry['surahNameArabic']})',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${entry['surahNameEnglish']} (${entry['surahNameArabic']})',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.favorite,
+                                          color: Colors.red,
+                                        ),
+                                        onPressed: () async {
+                                          final messenger =
+                                              ScaffoldMessenger.of(context);
+                                          final label =
+                                              localizations?.get(
+                                                'favoriteRemoved',
+                                              ) ??
+                                              'Favori supprimé 💔';
+                                          await _storageService.deleteFavorite(
+                                            entry['globalVerseNumber'],
+                                          );
+                                          setState(() {
+                                            _entries = _storageService
+                                                .getAllFavorites();
+                                          });
+                                          if (mounted) {
+                                            messenger.showSnackBar(
+                                              SnackBar(content: Text(label)),
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ],
                                   ),
                                   SizedBox(height: 8),
                                   Text(
@@ -98,9 +135,10 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                                     style: TextStyle(
                                       fontSize: 17,
                                       fontStyle: FontStyle.italic,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface.withOpacity(0.85),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withAlpha((0.85 * 255).round()),
                                     ),
                                   ),
                                 ],

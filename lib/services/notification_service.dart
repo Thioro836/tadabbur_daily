@@ -1,8 +1,10 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:flutter_timezone/flutter_timezone.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
@@ -26,70 +28,72 @@ class NotificationService {
     return _reminderMessages[random.nextInt(_reminderMessages.length)];
   }
 
- 
   static Future<void> init() async {
     try {
       tz_data.initializeTimeZones();
 
-      // Détecter le fuseau horaire de manière sécurisée
-      final offset = DateTime.now().timeZoneOffset;
-      final hours = offset.inHours;
       String timeZoneName = 'UTC';
-      if (hours == 1) timeZoneName = 'Europe/Paris';
-      if (hours == 2) timeZoneName = 'Europe/Paris'; // heure été
+      try {
+        final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+        timeZoneName = timezoneInfo.identifier;
+      } catch (e) {
+        debugPrint('NotificationService timezone error: $e');
+      }
 
       try {
         tz.setLocalLocation(tz.getLocation(timeZoneName));
       } catch (e) {
+        debugPrint(
+          'NotificationService setLocalLocation error: $e; falling back to UTC',
+        );
         tz.setLocalLocation(tz.UTC);
       }
+
+      debugPrint(
+        'NotificationService init timezone: $timeZoneName, local=${tz.local.name}',
+      );
 
       const androidSettings = AndroidInitializationSettings(
         '@mipmap/ic_launcher',
       );
-
-      // 🔴 MODIFICATION IMPORTANTE ICI : Tout mettre à false !
       const iosSettings = DarwinInitializationSettings(
-        requestAlertPermission: false, 
+        requestAlertPermission: false,
         requestBadgePermission: false,
         requestSoundPermission: false,
       );
 
-      const initSettings = InitializationSettings(
-        android: androidSettings,
-        iOS: iosSettings,
+      await _plugin.initialize(
+        settings: InitializationSettings(
+          android: androidSettings,
+          iOS: iosSettings,
+        ),
       );
-
-      await _plugin.initialize(settings: initSettings);
-
-      // 🔴 SUPPRIME le bloc "Demander les permissions sur Android 13+" qui était ici.
-      // Il est maintenant géré par requestPermissions() !
-
     } catch (e) {
       debugPrint('NotificationService init error: $e');
     }
   }
+
   static Future<void> requestPermissions() async {
     // Demande pour Android 13+
     try {
-      await _plugin
+      final bool? androidGranted = await _plugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.requestNotificationsPermission();
+      debugPrint('Android notification permission granted: $androidGranted');
     } catch (e) {
       debugPrint('Erreur demande permission Android: $e');
     }
 
     // Demande explicite pour iOS
     try {
-      await _plugin
+      final bool? iosGranted = await _plugin
           .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          );
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
+      debugPrint('iOS notification permission granted: $iosGranted');
     } catch (e) {
       debugPrint('Erreur demande permission iOS: $e');
     }
@@ -102,27 +106,55 @@ class NotificationService {
     try {
       await _plugin.cancel(id: 0);
 
-      await _plugin.zonedSchedule(
-        id: 0,
-        title: '🌙 Tadabbur Daily',
-        body: _getRandomMessage(),
-        scheduledDate: _nextInstanceOfTime(hour, minute),
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'daily_reminder',
-            'Rappel quotidien',
-            channelDescription: 'Rappel quotidien pour méditer',
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(),
+      final scheduledDate = _nextInstanceOfTime(hour, minute);
+      const notificationDetails = NotificationDetails(
+        android: AndroidNotificationDetails(
+          'daily_reminder',
+          'Rappel quotidien',
+          channelDescription: 'Rappel quotidien pour méditer',
+          importance: Importance.high,
+          priority: Priority.high,
         ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        matchDateTimeComponents: DateTimeComponents.time,
+        iOS: DarwinNotificationDetails(),
       );
+
+      try {
+        await _plugin.zonedSchedule(
+          id: 0,
+          title: '🌙 Tadabbur Daily',
+          body: _getRandomMessage(),
+          scheduledDate: scheduledDate,
+          notificationDetails: notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      } on PlatformException catch (e) {
+        debugPrint(
+          'scheduleDailyReminder exact alarm failed: ${e.code} - ${e.message}',
+        );
+        if (e.code == 'exact_alarms_not_permitted') {
+          await _plugin.zonedSchedule(
+            id: 0,
+            title: '🌙 Tadabbur Daily',
+            body: _getRandomMessage(),
+            scheduledDate: scheduledDate,
+            notificationDetails: notificationDetails,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            matchDateTimeComponents: DateTimeComponents.time,
+          );
+          debugPrint(
+            'scheduleDailyReminder fallback to inexact schedule succeeded',
+          );
+        } else {
+          rethrow;
+        }
+      }
     } catch (e) {
       debugPrint('scheduleDailyReminder error: $e');
     }
+    debugPrint('TZ local: ${tz.local.name}');
+    debugPrint('Scheduled at: ${_nextInstanceOfTime(hour, minute)}');
+    debugPrint('Now: ${tz.TZDateTime.now(tz.local)}');
   }
 
   static tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {

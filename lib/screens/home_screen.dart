@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _language = 'fr';
   bool _isPlaying = false;
   String? _currentAudioUrl;
+  Set<int> _favoriteVerseNumbers = {};
 
   @override
   void initState() {
@@ -55,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _audioPlayer.stop();
     _currentAudioUrl = null;
     final lang = await StorageService().getLanguage();
+    await _loadFavorites();
     setState(() {
       _language = lang;
       _verseFuture = _loadDailyVerse(lang);
@@ -116,16 +120,47 @@ class _HomeScreenState extends State<HomeScreen> {
     return verse;
   }
 
-  // Forcer un nouveau verset aléatoire (bouton refresh)
-  Future<void> _refreshVerse() async {
-    await _audioPlayer.stop();
-    _currentAudioUrl = null;
-    final lang = await StorageService().getLanguage();
-    final verse = _quranService.fetchRandomVerse(language: lang);
+  Future<void> _loadFavorites() async {
+    final favorites = await StorageService().getAllFavorites();
+    if (!mounted) return;
     setState(() {
-      _language = lang;
-      _verseFuture = verse;
+      _favoriteVerseNumbers = favorites
+          .map((entry) => entry['globalVerseNumber'] as int)
+          .toSet();
     });
+  }
+
+  Future<void> _toggleFavorite(Verse verse) async {
+    final isFavorite = _favoriteVerseNumbers.contains(verse.globalVerseNumber);
+    final appState = TadabburApp.of(context);
+    final localizations = appState?.languageProvider;
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (isFavorite) {
+      await StorageService().deleteFavorite(verse.globalVerseNumber);
+    } else {
+      await StorageService().saveFavorite({
+        'globalVerseNumber': verse.globalVerseNumber,
+        'surahNameEnglish': verse.surahNameEnglish,
+        'surahNameArabic': verse.surahNameArabic,
+        'surahNumber': verse.surahNumber,
+        'verseNumber': verse.verseNumber,
+        'arabicText': verse.arabicText,
+        'translation': verse.translation,
+      });
+    }
+    await _loadFavorites();
+    if (!mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          isFavorite
+              ? 'Verset supprimé des favoris 💔'
+              : localizations?.get('verseAddedToFavorites') ??
+                    'Verset ajouté aux favoris ⭐',
+        ),
+      ),
+    );
   }
 
   // Afficher le sélecteur de sourate
@@ -352,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(localizations?.get('homeTitle') ?? 'verset du jour'),
+        title: Text(localizations?.get('homeTitle') ?? 'Verset du jour'),
         actions: [
           TextButton(
             onPressed: () async {
@@ -465,9 +500,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   SizedBox(height: 18),
                                   Divider(
                                     thickness: 1,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary.withOpacity(0.3),
+                                    color: Theme.of(context).colorScheme.primary
+                                        .withAlpha((0.3 * 255).round()),
                                   ),
                                   SizedBox(height: 12),
                                   Text(
@@ -476,9 +510,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     style: TextStyle(
                                       fontSize: 17,
                                       fontStyle: FontStyle.italic,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface.withOpacity(0.85),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withAlpha((0.85 * 255).round()),
                                     ),
                                   ),
                                   SizedBox(height: 16),
@@ -512,36 +547,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                     children: [
                                       IconButton(
                                         icon: Icon(
-                                          Icons.favorite_border,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
+                                          _favoriteVerseNumbers.contains(
+                                                verse.globalVerseNumber,
+                                              )
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color:
+                                              _favoriteVerseNumbers.contains(
+                                                verse.globalVerseNumber,
+                                              )
+                                              ? Colors.red
+                                              : Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
                                         ),
                                         onPressed: () async {
-                                          await StorageService().saveFavorite({
-                                            'globalVerseNumber':
-                                                verse.globalVerseNumber,
-                                            'surahNameEnglish':
-                                                verse.surahNameEnglish,
-                                            'surahNameArabic':
-                                                verse.surahNameArabic,
-                                            'surahNumber': verse.surahNumber,
-                                            'verseNumber': verse.verseNumber,
-                                            'arabicText': verse.arabicText,
-                                            'translation': verse.translation,
-                                          });
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                localizations?.get(
-                                                      'verseAddedToFavorites',
-                                                    ) ??
-                                                    'Verset ajouté aux favoris ⭐',
-                                              ),
-                                            ),
-                                          );
+                                          await _toggleFavorite(verse);
                                         },
                                       ),
                                       SizedBox(width: 16),
@@ -563,6 +584,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                           // Sur mobile → menu de partage natif
                                           // Sur desktop/web → copie dans le presse-papier
+                                          final messenger =
+                                              ScaffoldMessenger.of(context);
+                                          final copiedMessage =
+                                              localizations?.get(
+                                                'verseCopied',
+                                              ) ??
+                                              'Verset copié ! 📋';
                                           if (!kIsWeb &&
                                               (defaultTargetPlatform ==
                                                       TargetPlatform.android ||
@@ -575,16 +603,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                             await Clipboard.setData(
                                               ClipboardData(text: text),
                                             );
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
+                                            messenger.showSnackBar(
                                               SnackBar(
-                                                content: Text(
-                                                  localizations?.get(
-                                                        'verseCopied',
-                                                      ) ??
-                                                      'Verset copié ! 📋',
-                                                ),
+                                                content: Text(copiedMessage),
                                               ),
                                             );
                                           }
