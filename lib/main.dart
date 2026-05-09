@@ -10,29 +10,61 @@ import 'package:tadabbur_daily/services/storage_service.dart';
 import 'package:tadabbur_daily/services/language_provider.dart';
 import 'dart:async';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    Zone.current.handleUncaughtError(
+      details.exception,
+      details.stack ?? StackTrace.empty,
+    );
+  };
 
-  // Initialiser Hive en premier
-  await Hive.initFlutter();
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Text(
+            'Erreur d\'initialisation. Redémarrez l\'application.\n\n${details.exception}',
+            style: TextStyle(color: Colors.red, fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  };
 
-  // Initialiser les notifications avec try/catch
-  try {
-    await NotificationService.init();
-  } catch (e) {
-    debugPrint('Erreur init notifications: $e');
-  }
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  // Précharger la police Amiri avec timeout
-  try {
-    await GoogleFonts.pendingFonts([
-      GoogleFonts.amiri(),
-    ]).timeout(Duration(seconds: 3));
-  } catch (e) {
-    debugPrint('Erreur police: $e');
-  }
+      // Initialiser Hive en premier
+      await Hive.initFlutter();
 
-  runApp(const TadabburApp());
+      // Initialiser les notifications avec try/catch
+      try {
+        await NotificationService.init();
+      } catch (e) {
+        debugPrint('Erreur init notifications: $e');
+      }
+
+      // Précharger la police Amiri avec timeout
+      try {
+        await GoogleFonts.pendingFonts([
+          GoogleFonts.amiri(),
+        ]).timeout(Duration(seconds: 3));
+      } catch (e) {
+        debugPrint('Erreur police: $e');
+      }
+
+      runApp(const TadabburApp());
+    },
+    (error, stackTrace) {
+      debugPrint('Unhandled error in zone: $error');
+      debugPrint('$stackTrace');
+    },
+  );
 }
 
 class TadabburApp extends StatefulWidget {
@@ -211,7 +243,7 @@ class _MainScreenState extends State<MainScreen> {
 
       final storage = StorageService();
       final notificationsEnabled = await storage.getNotificationStatus();
-      
+
       if (notificationsEnabled) {
         // Récupérer l'heure sauvegardée par l'utilisateur
         final time = await storage.getNotificationTime();

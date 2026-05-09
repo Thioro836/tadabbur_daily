@@ -285,19 +285,30 @@ class StorageService {
     final box = await _getBox();
     await box.delete('fav_$globalVerseNumber');
   }
+
+  static const String _settingsBoxName = 'settings';
+  static Box? _settingsBox;
+
+  Future<Box> _getSettingsBox() async {
+    if (_settingsBox != null && _settingsBox!.isOpen) {
+      return _settingsBox!;
+    }
+    _settingsBox = await Hive.openBox(_settingsBoxName);
+    return _settingsBox!;
+  }
+
   // Sauvegarder l'heure de notification
-Future<void> saveNotificationTime(TimeOfDay time) async {
-  final box = await Hive.openBox('settings');
-  await box.put('notification_hour', time.hour);
-  await box.put('notification_minute', time.minute);
-}
- 
-// Récupérer l'heure de notification (8h00 par défaut)
-Future<TimeOfDay> getNotificationTime() async {
-  final box = await Hive.openBox('settings');
-  final hour = box.get('notification_hour', defaultValue: 8);
-  final minute = box.get('notification_minute', defaultValue: 0);
-  return TimeOfDay(hour: hour, minute: minute);
-}
- 
+  Future<void> saveNotificationTime(TimeOfDay time) async {
+    final box = await _getSettingsBox();
+    await box.put('notification_hour', time.hour);
+    await box.put('notification_minute', time.minute);
+  }
+
+  // Récupérer l'heure de notification (8h00 par défaut)
+  Future<TimeOfDay> getNotificationTime() async {
+    final box = await _getSettingsBox();
+    final hour = box.get('notification_hour', defaultValue: 8);
+    final minute = box.get('notification_minute', defaultValue: 0);
+    return TimeOfDay(hour: hour, minute: minute);
+  }
 }
