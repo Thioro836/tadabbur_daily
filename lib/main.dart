@@ -25,9 +25,9 @@ void main() {
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Text(
-            'Erreur d\'initialisation. Redémarrez l\'application.\n\n${details.exception}',
-            style: TextStyle(color: Colors.red, fontSize: 16),
+          child: SelectableText(
+            'Erreur d\'affichage.\n\n${details.exception}\n\n${details.stack}',
+            style: const TextStyle(color: Colors.red, fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ),
@@ -39,26 +39,40 @@ void main() {
     () async {
       WidgetsFlutterBinding.ensureInitialized();
 
-      // Initialiser Hive en premier
-      await Hive.initFlutter();
+      String? initError;
 
-      // Initialiser les notifications avec try/catch
       try {
-        await NotificationService.init();
-      } catch (e) {
-        debugPrint('Erreur init notifications: $e');
+        // Initialiser Hive avec timeout
+        await Hive.initFlutter().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw TimeoutException('Hive init timeout'),
+        );
+
+        // Initialiser les notifications avec try/catch et timeout
+        try {
+          await NotificationService.init().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => throw TimeoutException('NotificationService init timeout'),
+          );
+        } catch (e) {
+          debugPrint('Erreur init notifications: $e');
+        }
+
+        // Précharger la police Amiri avec timeout
+        try {
+          await GoogleFonts.pendingFonts([
+            GoogleFonts.amiri(),
+          ]).timeout(const Duration(seconds: 3));
+        } catch (e) {
+          debugPrint('Erreur police: $e');
+        }
+      } catch (e, stack) {
+        debugPrint('Erreur critique initialisation: $e');
+        debugPrint('$stack');
+        initError = e.toString();
       }
 
-      // Précharger la police Amiri avec timeout
-      try {
-        await GoogleFonts.pendingFonts([
-          GoogleFonts.amiri(),
-        ]).timeout(Duration(seconds: 3));
-      } catch (e) {
-        debugPrint('Erreur police: $e');
-      }
-
-      runApp(const TadabburApp());
+      runApp(TadabburApp(initError: initError));
     },
     (error, stackTrace) {
       debugPrint('Unhandled error in zone: $error');
@@ -68,7 +82,8 @@ void main() {
 }
 
 class TadabburApp extends StatefulWidget {
-  const TadabburApp({super.key});
+  final String? initError;
+  const TadabburApp({super.key, this.initError});
 
   static _TadabburAppState? of(BuildContext context) {
     return context.findAncestorStateOfType<_TadabburAppState>();
@@ -81,14 +96,36 @@ class TadabburApp extends StatefulWidget {
 class _TadabburAppState extends State<TadabburApp> {
   bool _isDarkMode = false;
   late LanguageProvider _languageProvider;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
     _languageProvider = LanguageProvider();
     _languageProvider.addListener(_onLanguageChanged);
-    _loadTheme();
-    _initializeLanguage();
+    _initApp();
+  }
+
+  Future<void> _initApp() async {
+    if (widget.initError != null) {
+      setState(() {
+        _initialized = true;
+      });
+      return;
+    }
+
+    try {
+      await _loadTheme();
+      await _initializeLanguage();
+    } catch (e) {
+      debugPrint('Error during app init state: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _initialized = true;
+        });
+      }
+    }
   }
 
   Future<void> _initializeLanguage() async {
@@ -204,12 +241,45 @@ class _TadabburAppState extends State<TadabburApp> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_initialized) {
+      return MaterialApp(
+        theme: _lightTheme,
+        darkTheme: _darkTheme,
+        themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+        home: const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
+    if (widget.initError != null) {
+      return MaterialApp(
+        theme: _lightTheme,
+        darkTheme: _darkTheme,
+        themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: SelectableText(
+                'Erreur critique d\'initialisation.\n\n${widget.initError}\n\nEssayez de redémarrer l\'application.',
+                style: const TextStyle(color: Colors.red, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return MaterialApp(
       title: 'Tadabbur Daily',
       theme: _lightTheme,
       darkTheme: _darkTheme,
       themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: MainScreen(),
+      home: const MainScreen(),
     );
   }
 }

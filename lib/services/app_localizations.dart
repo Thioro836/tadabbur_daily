@@ -6,7 +6,7 @@ class AppLocalizations {
   static const Map<String, Map<String, String>> _translations = {
     'fr': {
       // Home Screen
-      'homeTitle': 'verset du jour',
+      'homeTitle': 'Verset du jour',
       'chooseSurah': 'Choisir une sourate',
       'verses': 'versets',
 
@@ -60,7 +60,7 @@ class AppLocalizations {
       'allDataDeleted': '🗑️ Toutes les données ont été supprimées',
       'about': '📱 À propos',
       'appName': 'Tadabbur Daily',
-      'version': 'Version 1.0.0',
+      'version': 'Version 1.0.1',
       'verseSource': 'Source des versets',
       'verseSourceAPI': 'API Al-Quran Cloud',
 
@@ -133,7 +133,7 @@ class AppLocalizations {
       'allDataDeleted': '🗑️ All data has been deleted',
       'about': '📱 About',
       'appName': 'Tadabbur Daily',
-      'version': 'Version 1.0.0',
+      'version': 'Version 1.0.1',
       'verseSource': 'Verse source',
       'verseSourceAPI': 'API Al-Quran Cloud',
 

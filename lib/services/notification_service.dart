@@ -34,8 +34,14 @@ class NotificationService {
 
       String timeZoneName = 'UTC';
       try {
-        final timezoneInfo = await FlutterTimezone.getLocalTimezone();
-        timeZoneName = timezoneInfo.identifier;
+        final dynamic timezoneInfo = await FlutterTimezone.getLocalTimezone().timeout(
+          const Duration(seconds: 2),
+        );
+        if (timezoneInfo is String) {
+          timeZoneName = timezoneInfo;
+        } else {
+          timeZoneName = timezoneInfo.identifier;
+        }
       } catch (e) {
         debugPrint('NotificationService timezone error: $e');
       }
