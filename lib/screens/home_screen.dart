@@ -13,6 +13,7 @@ import 'package:tadabbur_daily/screens/journal_screen.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
 import 'package:tadabbur_daily/main.dart';
 import 'package:tadabbur_daily/services/language_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -249,6 +250,14 @@ class _HomeScreenState extends State<HomeScreen> {
       _verseFuture = Future.value(verse);
     });
   }
+  Future<void> _openTafsir(Verse verse) async {
+  final url = Uri.parse(
+    'https://quran.com/${verse.surahNumber}/${verse.verseNumber}'
+  );
+  if (await canLaunchUrl(url)) {
+    await launchUrl(url, mode: LaunchMode.externalApplication);
+  }
+}
 
   // Widget skeleton pour le chargement
   Widget _buildShimmerSkeleton(LanguageProvider? localizations) {
@@ -388,28 +397,36 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations?.get('homeTitle') ?? 'Verset du jour'),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              final newLanguage = _language == 'fr' ? 'en' : 'fr';
-              await appState?.changeLanguage(newLanguage);
-              _language = newLanguage;
-              _loadVerse();
-            },
-            child: Text(
-              _language == 'fr' ? 'EN' : 'FR',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () => _showSurahPicker(localizations),
-            icon: Icon(Icons.search, color: Colors.white),
-          ),
-        ],
+       actions: [
+  PopupMenuButton<String>(
+    icon: const Icon(Icons.language, color: Colors.white),
+    onSelected: (value) async {
+      if (value == _language) return;
+
+      await appState?.changeLanguage(value);
+
+      setState(() {
+        _language = value;
+      });
+
+      _loadVerse();
+    },
+    itemBuilder: (context) => const [
+      PopupMenuItem(
+        value: 'fr',
+        child: Text('Français'),
+      ),
+      PopupMenuItem(
+        value: 'en',
+        child: Text('English'),
+      ),
+    ],
+  ),
+  IconButton(
+    onPressed: () => _showSurahPicker(localizations),
+    icon: const Icon(Icons.search, color: Colors.white),
+  ),
+],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -565,6 +582,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                           await _toggleFavorite(verse);
                                         },
                                       ),
+                                       SizedBox(width: 16),
+                                      Center(
+                                      child: TextButton.icon(
+                                        icon: Icon(Icons.menu_book, color: Colors.teal[700]),
+                                        label: Text(
+                                          'Lire le Tafsir',
+                                          style: TextStyle(color: Colors.teal[700]),
+                                        ),
+                                        onPressed: () => _openTafsir(verse),
+                                      ),
+                                    ),
                                       SizedBox(width: 16),
                                       IconButton(
                                         icon: Icon(
