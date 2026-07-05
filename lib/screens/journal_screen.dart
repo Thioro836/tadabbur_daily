@@ -8,6 +8,9 @@ class JournalScreen extends StatefulWidget {
   final String? initialReflection;
   final String? initialIdentification;
   final String? initialInvocation;
+  final bool readOnly;
+  final String? existingEntryKey;
+  final String? initialDate;
 
   const JournalScreen({
     super.key,
@@ -15,6 +18,9 @@ class JournalScreen extends StatefulWidget {
     this.initialReflection,
     this.initialIdentification,
     this.initialInvocation,
+    this.readOnly = false,
+    this.existingEntryKey,
+    this.initialDate,
   });
 
   @override
@@ -78,6 +84,7 @@ class _JournalScreenState extends State<JournalScreen> {
               TextFormField(
                 controller: _reflectionController,
                 maxLines: 4,
+                readOnly: widget.readOnly,
                 decoration: InputDecoration(
                   labelText:
                       localizations?.get('whatStruckMe') ??
@@ -89,6 +96,7 @@ class _JournalScreenState extends State<JournalScreen> {
               TextFormField(
                 controller: _identificationController,
                 maxLines: 4,
+                readOnly: widget.readOnly,
                 decoration: InputDecoration(
                   labelText:
                       localizations?.get('howIdentify') ??
@@ -100,6 +108,7 @@ class _JournalScreenState extends State<JournalScreen> {
               TextFormField(
                 controller: _invocationController,
                 maxLines: 4,
+                readOnly: widget.readOnly,
                 decoration: InputDecoration(
                   labelText:
                       localizations?.get('myDuaa') ?? 'Mon du\'a(invocation)',
@@ -107,31 +116,41 @@ class _JournalScreenState extends State<JournalScreen> {
                 ),
               ),
               SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  final today = DateTime.now().toString().split(
-                    ' ',
-                  )[0]; // "2026-03-24"
-                  await _storageService.saveEntry(
-                    date: today,
-                    reflection: _reflectionController.text,
-                    identification: _identificationController.text,
-                    invocation: _invocationController.text,
-                    globalVerseNumber: widget.verse.globalVerseNumber,
-                  );
-                  //afficher un message de confirmation après la sauvegarde
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        localizations?.get('saved') ??
-                            'Méditation sauvegardée ✅',
+              if (!widget.readOnly)
+                ElevatedButton(
+                  onPressed: () async {
+                    final date =
+                        widget.initialDate ??
+                        DateTime.now().toString().split(' ')[0];
+                    await _storageService.saveEntry(
+                      date: date,
+                      reflection: _reflectionController.text,
+                      identification: _identificationController.text,
+                      invocation: _invocationController.text,
+                      globalVerseNumber: widget.verse.globalVerseNumber,
+                      key: widget.existingEntryKey,
+                      arabicText: widget.verse.arabicText,
+                      translation: widget.verse.translation,
+                      surahNameArabic: widget.verse.surahNameArabic,
+                      surahNameEnglish: widget.verse.surahNameEnglish,
+                      surahNumber: widget.verse.surahNumber,
+                      verseNumber: widget.verse.verseNumber,
+                    );
+                    //afficher un message de confirmation après la sauvegarde
+                    if (!mounted || !context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          localizations?.get('saved') ??
+                              'Méditation sauvegardée ✅',
+                        ),
                       ),
-                    ),
-                  );
-                  Navigator.pop(context);
-                },
-                child: Text(localizations?.get('save') ?? 'Sauvegarder'),
-              ),
+                    );
+                    if (!mounted || !context.mounted) return;
+                    Navigator.pop(context);
+                  },
+                  child: Text(localizations?.get('save') ?? 'Sauvegarder'),
+                ),
             ],
           ),
         ),

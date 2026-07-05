@@ -26,15 +26,28 @@ class StorageService {
     required String identification,
     required String invocation,
     required int globalVerseNumber,
+    String? key,
+    String? arabicText,
+    String? translation,
+    String? surahNameArabic,
+    String? surahNameEnglish,
+    int? surahNumber,
+    int? verseNumber,
   }) async {
     final box = await _getBox();
-    final key = '${date}_$globalVerseNumber';
-    await box.put(key, {
+    final entryKey = key ?? '${date}_$globalVerseNumber';
+    await box.put(entryKey, {
       'date': date,
       'reflection': reflection,
       'identification': identification,
       'invocation': invocation,
       'globalVerseNumber': globalVerseNumber,
+      'arabicText': arabicText ?? '',
+      'translation': translation ?? '',
+      'surahNameArabic': surahNameArabic ?? '',
+      'surahNameEnglish': surahNameEnglish ?? '',
+      'surahNumber': surahNumber ?? 0,
+      'verseNumber': verseNumber ?? 0,
     });
   }
 

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tadabbur_daily/main.dart';
+import 'package:tadabbur_daily/services/export_service.dart';
 import 'package:tadabbur_daily/services/notification_service.dart';
 import 'package:tadabbur_daily/services/storage_service.dart';
 
@@ -81,18 +82,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final appState = TadabburApp.of(context);
     final localizations = appState?.languageProvider;
 
-    final json = await _storageService.exportData();
-    await Clipboard.setData(ClipboardData(text: json));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            localizations?.get('exportedToClipboard') ??
-                '✅ Données exportées dans le presse-papier !',
-          ),
-          backgroundColor: Colors.teal,
-        ),
+    try {
+      final entries = await _storageService.getAllEntries();
+      final filePath = await ExportService.exportMeditationsToPdf(
+        entries: entries,
       );
+      await Clipboard.setData(ClipboardData(text: filePath));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${localizations?.get('exportedToClipboard') ?? '✅ Export PDF prêt à partager !'}\nChemin : $filePath',
+            ),
+            backgroundColor: Colors.teal,
+            duration: Duration(seconds: 6),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Export PDF failed: $e\n$stackTrace');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '❌ Impossible d’exporter le PDF. Vérifie les permissions et réessaie.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -292,7 +310,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   subtitle: Text(
                     localizations?.get('exportDataDesc') ??
-                        'Copie JSON dans le presse-papier',
+                        'Génère un PDF de vos notes et réflexions',
                   ),
                   onTap: _exportData,
                 ),

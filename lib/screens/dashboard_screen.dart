@@ -220,43 +220,102 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             initiallyExpanded:
                                 monthGroup.key == grouped.keys.first,
                             children: monthEntries.map((entry) {
-                              return InkWell(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => JournalScreen(
-                                        verse: Verse(
-                                          arabicText: '',
-                                          translation: '',
-                                          surahNumber: 0,
-                                          surahNameArabic: '',
-                                          surahNameEnglish: '',
-                                          verseNumber: 0,
-                                          globalVerseNumber:
-                                              entry['globalVerseNumber'],
-                                        ),
-                                        initialReflection: entry['reflection'],
-                                        initialIdentification:
-                                            entry['identification'],
-                                        initialInvocation: entry['invocation'],
-                                      ),
+                              return ListTile(
+                                title: Text(entry['date']),
+                                subtitle: Text(
+                                  entry['reflection'],
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                trailing: Wrap(
+                                  spacing: 8,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.visibility),
+                                      tooltip:
+                                          localizations?.get('view') ??
+                                          'Visualiser',
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => JournalScreen(
+                                              verse: Verse(
+                                                arabicText:
+                                                    entry['arabicText'] ?? '',
+                                                translation:
+                                                    entry['translation'] ?? '',
+                                                surahNumber:
+                                                    entry['surahNumber'] ?? 0,
+                                                surahNameArabic:
+                                                    entry['surahNameArabic'] ??
+                                                    '',
+                                                surahNameEnglish:
+                                                    entry['surahNameEnglish'] ??
+                                                    '',
+                                                verseNumber:
+                                                    entry['verseNumber'] ?? 0,
+                                                globalVerseNumber:
+                                                    entry['globalVerseNumber'],
+                                              ),
+                                              initialReflection:
+                                                  entry['reflection'],
+                                              initialIdentification:
+                                                  entry['identification'],
+                                              initialInvocation:
+                                                  entry['invocation'],
+                                              existingEntryKey:
+                                                  '${entry['date']}_${entry['globalVerseNumber']}',
+                                              initialDate: entry['date'],
+                                              readOnly: true,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                  );
-                                },
-                                child: ListTile(
-                                  title: Text(entry['date']),
-                                  subtitle: Text(
-                                    entry['reflection'],
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  trailing: Icon(
-                                    Icons.edit,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
+                                    IconButton(
+                                      icon: Icon(Icons.edit),
+                                      tooltip:
+                                          localizations?.get('edit') ??
+                                          'Modifier',
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => JournalScreen(
+                                              verse: Verse(
+                                                arabicText:
+                                                    entry['arabicText'] ?? '',
+                                                translation:
+                                                    entry['translation'] ?? '',
+                                                surahNumber:
+                                                    entry['surahNumber'] ?? 0,
+                                                surahNameArabic:
+                                                    entry['surahNameArabic'] ??
+                                                    '',
+                                                surahNameEnglish:
+                                                    entry['surahNameEnglish'] ??
+                                                    '',
+                                                verseNumber:
+                                                    entry['verseNumber'] ?? 0,
+                                                globalVerseNumber:
+                                                    entry['globalVerseNumber'],
+                                              ),
+                                              initialReflection:
+                                                  entry['reflection'],
+                                              initialIdentification:
+                                                  entry['identification'],
+                                              initialInvocation:
+                                                  entry['invocation'],
+                                              existingEntryKey:
+                                                  '${entry['date']}_${entry['globalVerseNumber']}',
+                                              initialDate: entry['date'],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                               );
                             }).toList(),
