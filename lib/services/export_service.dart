@@ -16,32 +16,51 @@ class ExportService {
     final arabicFont = pw.Font.ttf(fontData);
     final pdf = pw.Document();
 
+    final latinFont = pw.Font.helvetica();
+    final headerStyle = pw.TextStyle(
+      font: latinFont,
+      fontSize: 24,
+      fontWeight: pw.FontWeight.bold,
+    );
+    final labelStyle = pw.TextStyle(
+      font: latinFont,
+      fontSize: 11,
+      fontWeight: pw.FontWeight.bold,
+    );
+    final bodyStyle = pw.TextStyle(font: latinFont, fontSize: 12);
+    final arabicStyle = pw.TextStyle(font: arabicFont, fontSize: 14);
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         build: (pw.Context context) {
           final content = <pw.Widget>[
-            pw.Text(
-              'Mes notes de méditation',
-              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-            ),
+            pw.Text('Mes notes de méditation', style: headerStyle),
             pw.SizedBox(height: 12),
             pw.Text(
               'Export généré le ${DateTime.now().toLocal().toString().split(' ')[0]}',
-              style: const pw.TextStyle(fontSize: 10),
+              style: bodyStyle.copyWith(fontSize: 10),
             ),
             pw.SizedBox(height: 16),
           ];
 
           if (entries.isEmpty) {
-            content.add(pw.Text('Aucune méditation à exporter.'));
+            content.add(
+              pw.Text('Aucune méditation à exporter.', style: bodyStyle),
+            );
           } else {
             for (final entry in entries) {
               final date = (entry['date'] ?? '').toString();
+              final surahNumber = entry['surahNumber'] as int?;
+              final verseNumber = entry['verseNumber'] as int?;
+              final globalVerseNumber = entry['globalVerseNumber'] as int?;
               final verseRef =
-                  entry['surahNumber'] != null && entry['verseNumber'] != null
-                  ? 'Sourate ${entry['surahNumber']} · Verset ${entry['verseNumber']}'
-                  : 'Verset ${entry['globalVerseNumber'] ?? '?'}';
+                  (surahNumber != null &&
+                      surahNumber > 0 &&
+                      verseNumber != null &&
+                      verseNumber > 0)
+                  ? 'Sourate $surahNumber · Verset $verseNumber'
+                  : 'Verset ${globalVerseNumber ?? '?'}';
               final verseText = (entry['arabicText'] ?? '').toString();
               final translation = (entry['translation'] ?? '').toString();
               final reflection = (entry['reflection'] ?? '').toString();
@@ -61,47 +80,41 @@ class ExportService {
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text(
-                        date,
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                      ),
+                      pw.Text(date, style: labelStyle),
                       pw.SizedBox(height: 6),
                       pw.Text(
                         verseRef,
-                        style: const pw.TextStyle(fontSize: 11),
+                        style: bodyStyle.copyWith(fontSize: 11),
                       ),
                       if (verseText.isNotEmpty) ...[
                         pw.SizedBox(height: 8),
-                        pw.Text(
-                          verseText,
-                          style: pw.TextStyle(fontSize: 14, font: arabicFont),
+                        pw.Directionality(
+                          textDirection: pw.TextDirection.rtl,
+                          child: pw.Text(verseText, style: arabicStyle),
                         ),
                       ],
                       if (translation.isNotEmpty) ...[
                         pw.SizedBox(height: 6),
-                        pw.Text(
-                          translation,
-                          style: const pw.TextStyle(fontSize: 11),
-                        ),
+                        pw.Text(translation, style: bodyStyle),
                       ],
                       pw.SizedBox(height: 10),
+                      pw.Text('Réflexion', style: labelStyle),
                       pw.Text(
-                        'Réflexion',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                        reflection.isNotEmpty ? reflection : '—',
+                        style: bodyStyle,
                       ),
-                      pw.Text(reflection.isNotEmpty ? reflection : '—'),
                       pw.SizedBox(height: 6),
+                      pw.Text('Identification', style: labelStyle),
                       pw.Text(
-                        'Identification',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                        identification.isNotEmpty ? identification : '—',
+                        style: bodyStyle,
                       ),
-                      pw.Text(identification.isNotEmpty ? identification : '—'),
                       pw.SizedBox(height: 6),
+                      pw.Text('Invocation', style: labelStyle),
                       pw.Text(
-                        'Invocation',
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                        invocation.isNotEmpty ? invocation : '—',
+                        style: bodyStyle,
                       ),
-                      pw.Text(invocation.isNotEmpty ? invocation : '—'),
                     ],
                   ),
                 ),
