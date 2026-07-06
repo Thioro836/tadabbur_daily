@@ -1,29 +1,23 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
+import 'package:tadabbur_daily/services/quran_service.dart';
 
 class ExportService {
   static Future<String> exportMeditationsToPdf({
     required List<Map<String, dynamic>> entries,
   }) async {
-    // Charger la police arabe
-    final arabicFontData = await rootBundle.load(
+    final fontData = await rootBundle.load(
       'assets/fonts/NotoSansArabic-Regular.ttf',
     );
-    final arabicFont = pw.Font.ttf(arabicFontData);
-
-    // FIX 1 : Utiliser NotoSans pour le latin aussi (supporte l'apostrophe et accents)
-    final latinFontData = await rootBundle.load(
-      'assets/fonts/NotoSansArabic-Regular.ttf',
-    );
-    final latinFont = pw.Font.ttf(latinFontData);
-
+    final arabicFont = pw.Font.ttf(fontData);
     final pdf = pw.Document();
 
+    final latinFont = pw.Font.helvetica();
     final headerStyle = pw.TextStyle(
       font: latinFont,
       fontSize: 24,
@@ -35,11 +29,61 @@ class ExportService {
       fontWeight: pw.FontWeight.bold,
     );
     final bodyStyle = pw.TextStyle(font: latinFont, fontSize: 12);
-    // FIX 2 : Style arabe avec direction RTL correcte
-    final arabicStyle = pw.TextStyle(
-      font: arabicFont,
-      fontSize: 16,
-    );
+    final arabicStyle = pw.TextStyle(font: arabicFont, fontSize: 14);
+
+    String normalizeText(String text) {
+      return text
+          .replaceAll('\u0000', '')
+          .replaceAll('\u0001', '')
+          .replaceAll('\u0002', '')
+          .replaceAll('\u0003', '')
+          .replaceAll('\u0004', '')
+          .replaceAll('\u0005', '')
+          .replaceAll('\u0006', '')
+          .replaceAll('\u0007', '')
+          .replaceAll('\u0008', '')
+          .replaceAll('\u0009', '')
+          .replaceAll('\u000a', '')
+          .replaceAll('\u000b', '')
+          .replaceAll('\u000c', '')
+          .replaceAll('\u000d', '')
+          .replaceAll('\u000e', '')
+          .replaceAll('\u000f', '')
+          .replaceAll('\u0010', '')
+          .replaceAll('\u0011', '')
+          .replaceAll('\u0012', '')
+          .replaceAll('\u0013', '')
+          .replaceAll('\u0014', '')
+          .replaceAll('\u0015', '')
+          .replaceAll('\u0016', '')
+          .replaceAll('\u0017', '')
+          .replaceAll('\u0018', '')
+          .replaceAll('\u0019', '')
+          .replaceAll('\u001a', '')
+          .replaceAll('\u001b', '')
+          .replaceAll('\u001c', '')
+          .replaceAll('\u001d', '')
+          .replaceAll('\u001e', '')
+          .replaceAll('\u001f', '')
+          .replaceAll('’', "'")
+          .replaceAll('‘', "'")
+          .replaceAll('“', '"')
+          .replaceAll('”', '"')
+          .replaceAll('—', '-')
+          .replaceAll('…', '...');
+    }
+
+    Map<String, int> getSurahVerse(int globalVerseNumber) {
+      int remaining = globalVerseNumber;
+      for (int i = 0; i < QuranService.versesPerSurah.length; i++) {
+        final versesInSurah = QuranService.versesPerSurah[i];
+        if (remaining <= versesInSurah) {
+          return {'surah': i + 1, 'verse': remaining};
+        }
+        remaining -= versesInSurah;
+      }
+      return {'surah': 0, 'verse': 0};
+    }
 
     pdf.addPage(
       pw.MultiPage(
@@ -65,19 +109,37 @@ class ExportService {
               final surahNumber = entry['surahNumber'] as int?;
               final verseNumber = entry['verseNumber'] as int?;
               final globalVerseNumber = entry['globalVerseNumber'] as int?;
+              final effectiveSurahNumber =
+                  (surahNumber != null && surahNumber > 0)
+                  ? surahNumber
+                  : (globalVerseNumber != null && globalVerseNumber > 0
+                        ? getSurahVerse(globalVerseNumber)['surah']!
+                        : 0);
+              final effectiveVerseNumber =
+                  (verseNumber != null && verseNumber > 0)
+                  ? verseNumber
+                  : (globalVerseNumber != null && globalVerseNumber > 0
+                        ? getSurahVerse(globalVerseNumber)['verse']!
+                        : 0);
               final verseRef =
-                  (surahNumber != null &&
-                      surahNumber > 0 &&
-                      verseNumber != null &&
-                      verseNumber > 0)
-                  ? 'Sourate $surahNumber - Verset $verseNumber'
+                  (effectiveSurahNumber > 0 && effectiveVerseNumber > 0)
+                  ? 'Sourate $effectiveSurahNumber · Verset $effectiveVerseNumber'
                   : 'Verset ${globalVerseNumber ?? '?'}';
-
-              final verseText = (entry['arabicText'] ?? '').toString().trim();
-              final translation = (entry['translation'] ?? '').toString().trim();
-              final reflection = (entry['reflection'] ?? '').toString().trim();
-              final identification = (entry['identification'] ?? '').toString().trim();
-              final invocation = (entry['invocation'] ?? '').toString().trim();
+              final verseText = normalizeText(
+                (entry['arabicText'] ?? '').toString(),
+              );
+              final translation = normalizeText(
+                (entry['translation'] ?? '').toString(),
+              );
+              final reflection = normalizeText(
+                (entry['reflection'] ?? '').toString(),
+              );
+              final identification = normalizeText(
+                (entry['identification'] ?? '').toString(),
+              );
+              final invocation = normalizeText(
+                (entry['invocation'] ?? '').toString(),
+              );
 
               content.add(
                 pw.Container(
@@ -98,55 +160,33 @@ class ExportService {
                         verseRef,
                         style: bodyStyle.copyWith(fontSize: 11),
                       ),
-                      // FIX 3 : Affichage du verset arabe avec alignement RTL
                       if (verseText.isNotEmpty) ...[
-                        pw.SizedBox(height: 10),
-                        pw.Container(
-                          width: double.infinity,
-                          padding: const pw.EdgeInsets.all(8),
-                          decoration: pw.BoxDecoration(
-                            color: PdfColors.grey100,
-                            borderRadius: const pw.BorderRadius.all(
-                              pw.Radius.circular(4),
-                            ),
-                          ),
-                          child: pw.Text(
-                            verseText,
-                            style: arabicStyle,
-                            textAlign: pw.TextAlign.right,
-                          ),
+                        pw.SizedBox(height: 8),
+                        pw.Directionality(
+                          textDirection: pw.TextDirection.rtl,
+                          child: pw.Text(verseText, style: arabicStyle),
                         ),
                       ],
                       if (translation.isNotEmpty) ...[
-                        pw.SizedBox(height: 8),
-                        pw.Text(
-                          translation,
-                          style: bodyStyle.copyWith(
-                            fontStyle: pw.FontStyle.italic,
-                          ),
-                        ),
+                        pw.SizedBox(height: 6),
+                        pw.Text(translation, style: bodyStyle),
                       ],
                       pw.SizedBox(height: 10),
-                      pw.Divider(thickness: 0.5),
+                      pw.Text('Réflexion', style: labelStyle),
+                      pw.Text(
+                        reflection.isNotEmpty ? reflection : '—',
+                        style: bodyStyle,
+                      ),
                       pw.SizedBox(height: 6),
-                      pw.Text('Ce qui m\'a marque', style: labelStyle),
-                      pw.SizedBox(height: 4),
+                      pw.Text('Identification', style: labelStyle),
                       pw.Text(
-                        reflection.isNotEmpty ? reflection : '-',
+                        identification.isNotEmpty ? identification : '—',
                         style: bodyStyle,
                       ),
-                      pw.SizedBox(height: 8),
-                      pw.Text('Comment je m\'y identifie', style: labelStyle),
-                      pw.SizedBox(height: 4),
+                      pw.SizedBox(height: 6),
+                      pw.Text('Invocation', style: labelStyle),
                       pw.Text(
-                        identification.isNotEmpty ? identification : '-',
-                        style: bodyStyle,
-                      ),
-                      pw.SizedBox(height: 8),
-                      pw.Text('Mon du\'a', style: labelStyle),
-                      pw.SizedBox(height: 4),
-                      pw.Text(
-                        invocation.isNotEmpty ? invocation : '-',
+                        invocation.isNotEmpty ? invocation : '—',
                         style: bodyStyle,
                       ),
                     ],
@@ -171,6 +211,7 @@ class ExportService {
           targetDir = downloadsDir;
         }
       } catch (_) {
+        // Sur certaines plateformes mobiles, getDownloadsDirectory() n'est pas supporté.
         targetDir = appDir;
       }
     }
@@ -187,8 +228,8 @@ class ExportService {
           text: 'Mes notes de méditation Tadabbur Daily',
         ),
       );
-    } catch (e) {
-      print('PDF share skipped: $e');
+    } catch (_) {
+      // Le partage peut échouer sur certaines plateformes ; le fichier est déjà enregistré.
     }
 
     return file.path;
