@@ -115,8 +115,20 @@ class ExportService {
     );
 
     final appDir = await getApplicationDocumentsDirectory();
-    final downloadsDir = await getDownloadsDirectory();
-    final targetDir = downloadsDir ?? appDir;
+    Directory targetDir = appDir;
+
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      try {
+        final downloadsDir = await getDownloadsDirectory();
+        if (downloadsDir != null) {
+          targetDir = downloadsDir;
+        }
+      } catch (_) {
+        // Sur certaines plateformes mobiles, getDownloadsDirectory() n'est pas supporté.
+        targetDir = appDir;
+      }
+    }
+
     final file = File(
       '${targetDir.path}/tadabbur_notes_${DateTime.now().millisecondsSinceEpoch}.pdf',
     );
