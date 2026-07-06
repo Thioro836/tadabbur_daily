@@ -10,13 +10,20 @@ class ExportService {
   static Future<String> exportMeditationsToPdf({
     required List<Map<String, dynamic>> entries,
   }) async {
-    final fontData = await rootBundle.load(
+    // Charger la police arabe
+    final arabicFontData = await rootBundle.load(
       'assets/fonts/NotoSansArabic-Regular.ttf',
     );
-    final arabicFont = pw.Font.ttf(fontData);
+    final arabicFont = pw.Font.ttf(arabicFontData);
+
+    // FIX 1 : Utiliser NotoSans pour le latin aussi (supporte l'apostrophe et accents)
+    final latinFontData = await rootBundle.load(
+      'assets/fonts/NotoSansArabic-Regular.ttf',
+    );
+    final latinFont = pw.Font.ttf(latinFontData);
+
     final pdf = pw.Document();
 
-    final latinFont = pw.Font.helvetica();
     final headerStyle = pw.TextStyle(
       font: latinFont,
       fontSize: 24,
@@ -28,7 +35,11 @@ class ExportService {
       fontWeight: pw.FontWeight.bold,
     );
     final bodyStyle = pw.TextStyle(font: latinFont, fontSize: 12);
-    final arabicStyle = pw.TextStyle(font: arabicFont, fontSize: 14);
+    // FIX 2 : Style arabe avec direction RTL correcte
+    final arabicStyle = pw.TextStyle(
+      font: arabicFont,
+      fontSize: 16,
+    );
 
     pdf.addPage(
       pw.MultiPage(
@@ -59,13 +70,14 @@ class ExportService {
                       surahNumber > 0 &&
                       verseNumber != null &&
                       verseNumber > 0)
-                  ? 'Sourate $surahNumber · Verset $verseNumber'
+                  ? 'Sourate $surahNumber - Verset $verseNumber'
                   : 'Verset ${globalVerseNumber ?? '?'}';
-              final verseText = (entry['arabicText'] ?? '').toString();
-              final translation = (entry['translation'] ?? '').toString();
-              final reflection = (entry['reflection'] ?? '').toString();
-              final identification = (entry['identification'] ?? '').toString();
-              final invocation = (entry['invocation'] ?? '').toString();
+
+              final verseText = (entry['arabicText'] ?? '').toString().trim();
+              final translation = (entry['translation'] ?? '').toString().trim();
+              final reflection = (entry['reflection'] ?? '').toString().trim();
+              final identification = (entry['identification'] ?? '').toString().trim();
+              final invocation = (entry['invocation'] ?? '').toString().trim();
 
               content.add(
                 pw.Container(
@@ -86,33 +98,55 @@ class ExportService {
                         verseRef,
                         style: bodyStyle.copyWith(fontSize: 11),
                       ),
+                      // FIX 3 : Affichage du verset arabe avec alignement RTL
                       if (verseText.isNotEmpty) ...[
-                        pw.SizedBox(height: 8),
-                        pw.Directionality(
-                          textDirection: pw.TextDirection.rtl,
-                          child: pw.Text(verseText, style: arabicStyle),
+                        pw.SizedBox(height: 10),
+                        pw.Container(
+                          width: double.infinity,
+                          padding: const pw.EdgeInsets.all(8),
+                          decoration: pw.BoxDecoration(
+                            color: PdfColors.grey100,
+                            borderRadius: const pw.BorderRadius.all(
+                              pw.Radius.circular(4),
+                            ),
+                          ),
+                          child: pw.Text(
+                            verseText,
+                            style: arabicStyle,
+                            textAlign: pw.TextAlign.right,
+                          ),
                         ),
                       ],
                       if (translation.isNotEmpty) ...[
-                        pw.SizedBox(height: 6),
-                        pw.Text(translation, style: bodyStyle),
+                        pw.SizedBox(height: 8),
+                        pw.Text(
+                          translation,
+                          style: bodyStyle.copyWith(
+                            fontStyle: pw.FontStyle.italic,
+                          ),
+                        ),
                       ],
                       pw.SizedBox(height: 10),
-                      pw.Text('Réflexion', style: labelStyle),
+                      pw.Divider(thickness: 0.5),
+                      pw.SizedBox(height: 6),
+                      pw.Text('Ce qui m\'a marque', style: labelStyle),
+                      pw.SizedBox(height: 4),
                       pw.Text(
-                        reflection.isNotEmpty ? reflection : '—',
+                        reflection.isNotEmpty ? reflection : '-',
                         style: bodyStyle,
                       ),
-                      pw.SizedBox(height: 6),
-                      pw.Text('Identification', style: labelStyle),
+                      pw.SizedBox(height: 8),
+                      pw.Text('Comment je m\'y identifie', style: labelStyle),
+                      pw.SizedBox(height: 4),
                       pw.Text(
-                        identification.isNotEmpty ? identification : '—',
+                        identification.isNotEmpty ? identification : '-',
                         style: bodyStyle,
                       ),
-                      pw.SizedBox(height: 6),
-                      pw.Text('Invocation', style: labelStyle),
+                      pw.SizedBox(height: 8),
+                      pw.Text('Mon du\'a', style: labelStyle),
+                      pw.SizedBox(height: 4),
                       pw.Text(
-                        invocation.isNotEmpty ? invocation : '—',
+                        invocation.isNotEmpty ? invocation : '-',
                         style: bodyStyle,
                       ),
                     ],
@@ -137,7 +171,6 @@ class ExportService {
           targetDir = downloadsDir;
         }
       } catch (_) {
-        // Sur certaines plateformes mobiles, getDownloadsDirectory() n'est pas supporté.
         targetDir = appDir;
       }
     }
@@ -155,8 +188,6 @@ class ExportService {
         ),
       );
     } catch (e) {
-      // Le partage peut échouer sur certaines plateformes ; le fichier est déjà enregistré.
-      // On garde simplement l'exception pour le log si nécessaire.
       print('PDF share skipped: $e');
     }
 
